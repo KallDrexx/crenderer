@@ -7,6 +7,6 @@ set(CMAKE_C_STANDARD 99)
 find_package(SDL2 REQUIRED)
 include_directories(${SDL2_INCLUDE_DIR})
 
-add_executable(crenderer src/main.c src/display.h src/display.c src/input.h src/input.c)
+add_executable(crenderer src/main.c src/display.h src/display.c src/input.h src/input.c src/draw.c src/draw.h src/vector.c src/vector.h src/camera.c src/camera.h)
 
 target_link_libraries(crenderer ${SDL2_LIBRARY})

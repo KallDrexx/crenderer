@@ -3,10 +3,10 @@
 
 #include <stdbool.h>
 
-struct Input_State {
+typedef struct {
     bool quit_requested;
-};
+} InputState;
 
-void process_events(struct Input_State* state);
+void process_events(InputState* state);
 
 #endif //CRENDERER_INPUT_H

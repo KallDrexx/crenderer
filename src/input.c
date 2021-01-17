@@ -1,11 +1,11 @@
 #include <SDL2/SDL.h>
 #include "input.h"
 
-void clear_state(struct Input_State* state) {
+void clear_state(InputState* state) {
     state->quit_requested = false;
 }
 
-void process_events(struct Input_State* state) {
+void process_events(InputState* state) {
     clear_state(state);
 
     SDL_Event event;
