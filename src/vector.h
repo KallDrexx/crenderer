@@ -16,6 +16,8 @@ float vector3_length(Vector3* vector);
 Vector3 vector3_add(Vector3* first, Vector3* second);
 Vector2 project_to_2d(Vector3* vector);
 
+Vector2 vector3_project(Vector3* vector, Vector3* eye);
+
 float vector2_length(Vector2* vector);
 Vector2 vector2_add(Vector2* first, Vector2* second);
 

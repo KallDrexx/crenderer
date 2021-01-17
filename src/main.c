@@ -8,10 +8,11 @@ bool isRunning;
 InputState inputState;
 
 #define POINT_COUNT 9 * 9 * 9
-const float FOV_FACTOR = 120;
+const float FOV_FACTOR = 800;
 
 Vector3 cubePoints[POINT_COUNT];
 Vector2 projectedPoints[POINT_COUNT];
+Vector3 eye = {0, 0, -5};
 
 bool setup(void) {
     isRunning = initialize_display();
@@ -42,7 +43,7 @@ void process_input(void) {
 void update(void) {
     for (int i = 0; i < POINT_COUNT; i++) {
         Vector3 point = cubePoints[i];
-        Vector2 projected_point = project_to_2d(&point);
+        Vector2 projected_point = vector3_project(&point, &eye);
 
         projectedPoints[i] = projected_point;
     }
@@ -59,7 +60,11 @@ void render(void) {
         float x = point.x * FOV_FACTOR + horizontalCenter;
         float y = point.y * FOV_FACTOR + verticalCenter;
 
-        draw_rect(x - 4, y - 4, 8, 8, 0xFFFF0000);
+        float mult = (1 - cubePoints[i].z) / 2.0f;
+        uint8_t red = (uint32_t) (((float) 0xFF) * mult);
+        uint32_t color = (((uint32_t) red) << 4 * 4) | 0xFF000000;
+
+        draw_rect(x - 2, y - 2, 4, 4, color);
     }
 
     finish_render_cycle();
