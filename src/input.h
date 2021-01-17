@@ -7,6 +7,6 @@ struct Input_State {
     bool quit_requested;
 };
 
-struct Input_State process_events();
+void process_events(struct Input_State* state);
 
 #endif //CRENDERER_INPUT_H

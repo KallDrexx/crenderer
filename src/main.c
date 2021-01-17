@@ -3,6 +3,7 @@
 #include "input.h"
 
 bool is_running;
+struct Input_State input_state;
 
 bool setup(void) {
     is_running = initialize_display();
@@ -10,10 +11,9 @@ bool setup(void) {
 }
 
 void process_input(void) {
-    struct Input_State state;
-    state = process_events();
+    process_events(&input_state);
 
-    if (state.quit_requested) {
+    if (input_state.quit_requested) {
         is_running = false;
     }
 }
