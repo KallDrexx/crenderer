@@ -5,7 +5,7 @@
 
 void draw_pixel(int x, int y, uint32_t color) {
     if (x >= 0 && x < windowWidth && y >= 0 && y < windowHeight) {
-        pixelBuffer[get_pixel_index(x, y)] = color;
+        pixelBuffer[display_get_pixel_index(x, y)] = color;
     }
 }
 

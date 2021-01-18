@@ -7,6 +7,6 @@ typedef struct {
     bool quit_requested;
 } InputState;
 
-void process_events(InputState* state);
+void input_update_state(InputState* state);
 
 #endif //CRENDERER_INPUT_H

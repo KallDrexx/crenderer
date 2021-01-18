@@ -9,7 +9,7 @@ SDL_Texture* texture;
 SDL_Window* window;
 SDL_Renderer* renderer;
 
-bool initialize_display(void) {
+bool display_init(void) {
     if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
         fprintf(stderr, "Error initializing SDL: %s.\n", SDL_GetError());
         return false;
@@ -64,7 +64,7 @@ bool initialize_display(void) {
     return true;
 }
 
-void free_display_resources(void) {
+void display_free(void) {
     free(pixelBuffer);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
@@ -77,11 +77,11 @@ void clear_pixel_buffer(uint32_t color) {
     }
 }
 
-void begin_render_cycle(void) {
+void display_begin_frame(void) {
     clear_pixel_buffer(0xFF000000);
 }
 
-void finish_render_cycle(void) {
+void display_finish_frame(void) {
 
     SDL_UpdateTexture(texture, NULL, pixelBuffer, (int)(windowWidth * sizeof(uint32_t)));
     SDL_RenderCopy(renderer, texture, NULL, NULL);
@@ -89,6 +89,6 @@ void finish_render_cycle(void) {
     SDL_RenderPresent(renderer);
 }
 
-int get_pixel_index(int x, int y) {
+int display_get_pixel_index(int x, int y) {
     return y * windowWidth + x;
 }

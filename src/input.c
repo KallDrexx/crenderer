@@ -5,7 +5,7 @@ void clear_state(InputState* state) {
     state->quit_requested = false;
 }
 
-void process_events(InputState* state) {
+void input_update_state(InputState* state) {
     clear_state(state);
 
     SDL_Event event;
