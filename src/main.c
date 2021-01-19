@@ -6,6 +6,7 @@
 bool isRunning;
 struct KCR_InputState inputState;
 struct KCR_Display* display;
+struct KCR_Scene* scene;
 
 bool setup(void) {
     display = kcr_display_init();
@@ -13,7 +14,10 @@ bool setup(void) {
         return false;
     }
 
-    scene_init();
+    scene = kcr_scene_init();
+    if (scene == NULL) {
+        return false;
+    }
 
     return true;
 }
@@ -27,12 +31,12 @@ void process_input(void) {
 }
 
 void update(void) {
-    scene_update(&inputState);
+    kcr_scene_update(scene, &inputState);
 }
 
 void render(void) {
     kcr_display_begin_frame(display);
-    scene_render(display);
+    kcr_scene_render(scene, display);
     kcr_display_finish_frame(display);
 }
 
@@ -45,6 +49,7 @@ int main(int argc, char* args[]) {
         render();
     }
 
+    kcr_scene_free(scene);
     kcr_display_free(display);
 
     return 0;

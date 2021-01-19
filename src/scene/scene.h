@@ -4,8 +4,14 @@
 #include "../gfx/display.h"
 #include "../input.h"
 
-void scene_init(void);
-void scene_update(struct KCR_InputState* inputState);
-void scene_render(struct KCR_Display* display);
+struct KCR_Scene_Internal;
+struct KCR_Scene {
+    struct KCR_Scene_Internal* internal;
+};
+
+struct KCR_Scene* kcr_scene_init(void);
+void kcr_scene_update(struct KCR_Scene* scene, struct KCR_InputState* inputState);
+void kcr_scene_render(struct KCR_Scene* scene, struct KCR_Display* display);
+void kcr_scene_free(struct KCR_Scene* scene);
 
 #endif //CRENDERER_SCENE_H
