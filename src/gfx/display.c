@@ -2,93 +2,109 @@
 #include <SDL2/SDL.h>
 #include "display.h"
 
-int windowWidth;
-int windowHeight;
-uint32_t* pixelBuffer;
-SDL_Texture* texture;
-SDL_Window* window;
-SDL_Renderer* renderer;
+struct KCR_Display_Internal {
+    SDL_Texture* texture;
+    SDL_Window* window;
+    SDL_Renderer* renderer;
+};
 
-bool display_init(void) {
+struct KCR_Display* kcr_display_init(void) {
     if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
         fprintf(stderr, "Error initializing SDL: %s.\n", SDL_GetError());
-        return false;
+        return NULL;
     }
+
+    struct KCR_Display* display = malloc(sizeof (struct KCR_Display));
+    display->internal = malloc(sizeof(struct KCR_Display_Internal));;
 
     SDL_DisplayMode display_mode;
     SDL_GetCurrentDisplayMode(0, &display_mode);
 
-    windowWidth = display_mode.w;
-    windowHeight = display_mode.h;
+    display->windowWidth = display_mode.w;
+    display->windowHeight = display_mode.h;
 
-    Uint32 window_flags = SDL_WINDOW_BORDERLESS;
-    window = SDL_CreateWindow(
+    uint32_t window_flags = SDL_WINDOW_BORDERLESS;
+    display->internal->window = SDL_CreateWindow(
             "CRenderer",
             SDL_WINDOWPOS_CENTERED,
             SDL_WINDOWPOS_CENTERED,
-            windowWidth,
-            windowHeight,
+            display->windowWidth,
+            display->windowHeight,
             window_flags);
 
-    if (!window) {
+    if (!display->internal->window) {
         fprintf(stderr, "Error creating window: %s\n", SDL_GetError());
-        return false;
+        kcr_display_free(display);
+
+        return NULL;
     }
 
-    renderer = SDL_CreateRenderer(window, -1, 0);
-    if (!renderer) {
+    display->internal->renderer = SDL_CreateRenderer(display->internal->window, -1, 0);
+    if (!display->internal->renderer) {
         fprintf(stderr, "Error creating renderer: %s\n", SDL_GetError());
-        return false;
+        kcr_display_free(display);
+
+        return NULL;
     }
 
-    pixelBuffer = malloc(sizeof(uint32_t) * windowHeight * windowWidth);
-    if (pixelBuffer == NULL) {
+    display->pixelBuffer = malloc(sizeof(uint32_t) * display->windowHeight * display->windowWidth);
+    if (display->pixelBuffer == NULL) {
         fprintf(stderr, "Error allocating pixel buffer\n");
+        kcr_display_free(display);
 
-        return false;
+        return NULL;
     }
 
-    texture = SDL_CreateTexture(
-            renderer,
+    display->internal->texture = SDL_CreateTexture(
+            display->internal->renderer,
             SDL_PIXELFORMAT_ARGB8888,
             SDL_TEXTUREACCESS_STREAMING,
-            windowWidth,
-            windowHeight);
+            display->windowWidth,
+            display->windowHeight);
 
-    if (texture == NULL) {
+    if (display->internal->texture == NULL) {
         fprintf(stderr, "Failed to create texture: %s\n", SDL_GetError());
+        kcr_display_free(display);
 
-        return false;
+        return NULL;
     }
 
-    return true;
+    return display;
 }
 
-void display_free(void) {
-    free(pixelBuffer);
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
-    SDL_Quit();
+void kcr_display_free(struct KCR_Display* display) {
+    if (display != NULL) {
+        if (display->internal != NULL) {
+            // SDL_DestroyRenderer destroys associated textures, so we shouldn't do that ourselves
+            SDL_DestroyRenderer(display->internal->renderer);
+            SDL_DestroyWindow(display->internal->window);
+            free(display->internal);
+        }
+
+        free(display->pixelBuffer);
+    }
+
+    free(display);
 }
 
-void clear_pixel_buffer(uint32_t color) {
-    for (int x = 0; x < windowWidth * windowHeight; x++) {
-        pixelBuffer[x] = color;
+void kcr_display_begin_frame(struct KCR_Display* display) {
+    for (int x = 0; x < display->windowWidth * display->windowHeight; x++) {
+        display->pixelBuffer[x] = 0xFF000000;
     }
 }
 
-void display_begin_frame(void) {
-    clear_pixel_buffer(0xFF000000);
+void kcr_display_finish_frame(struct KCR_Display* display) {
+
+    SDL_UpdateTexture(
+            display->internal->texture,
+            NULL,
+            display->pixelBuffer,
+            (int)(display->windowWidth * sizeof(uint32_t)));
+
+    SDL_RenderCopy(display->internal->renderer, display->internal->texture, NULL, NULL);
+    SDL_RenderPresent(display->internal->renderer);
 }
 
-void display_finish_frame(void) {
-
-    SDL_UpdateTexture(texture, NULL, pixelBuffer, (int)(windowWidth * sizeof(uint32_t)));
-    SDL_RenderCopy(renderer, texture, NULL, NULL);
-
-    SDL_RenderPresent(renderer);
-}
-
-int display_get_pixel_index(int x, int y) {
-    return y * windowWidth + x;
+int kcr_display_get_pixel_index(struct KCR_Display* display, int x, int y) {
+    return y * display->windowWidth + x;
 }

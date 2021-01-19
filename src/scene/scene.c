@@ -52,12 +52,12 @@ Vec2 perform_projection(Vec3 *vector) {
     return result;
 }
 
-void scene_render(void) {
+void scene_render(struct KCR_Display* display) {
     #define PIXELS_PER_UNIT 2000
     #define RECT_SIZE 8
 
-    int centerWidth = windowWidth / 2;
-    int centerHeight = windowHeight / 2;
+    int centerWidth = display->windowWidth / 2;
+    int centerHeight = display->windowHeight / 2;
     for (int index = 0; index < NUM_POINTS; index++) {
         Vec2 projectedPoint = perform_projection(&cubePoints[index]);
 
@@ -66,6 +66,7 @@ void scene_render(void) {
         uint32_t color = (((uint32_t) red) << 4 * 4) | 0xFF000000;
 
         draw_rect(
+                display,
                 projectedPoint.x * PIXELS_PER_UNIT + centerWidth,
                 projectedPoint.y * PIXELS_PER_UNIT + centerHeight,
                 RECT_SIZE,
