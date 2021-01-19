@@ -1,4 +1,5 @@
 #include <malloc.h>
+#include <stdbool.h>
 #include "scene.h"
 #include "../math/vector.h"
 #include "../gfx/draw.h"
@@ -7,6 +8,7 @@
 struct KCR_Scene_Internal {
     struct KCR_Vec3 cubePoints[NUM_POINTS];
     struct KCR_Vec3 cameraPosition;
+    bool moveAway;
 };
 
 struct KCR_Scene* kcr_scene_init(void) {
@@ -15,7 +17,8 @@ struct KCR_Scene* kcr_scene_init(void) {
 
     scene->internal->cameraPosition.x = 0;
     scene->internal->cameraPosition.y = 0;
-    scene->internal->cameraPosition.z = -5;
+    scene->internal->cameraPosition.z = -1;
+    scene->internal->moveAway = true;
 
     int index = 0;
     for (float x = -1; x <= 1; x += 0.25) {
@@ -32,7 +35,19 @@ struct KCR_Scene* kcr_scene_init(void) {
 }
 
 void kcr_scene_update(struct KCR_Scene* scene, struct KCR_InputState* inputState) {
+    if (scene->internal->cameraPosition.z < -10) {
+        scene->internal->moveAway = false;
+    }
+    else if (scene->internal->cameraPosition.z > -2) {
+        scene->internal->moveAway = true;
+    }
 
+
+    if (scene->internal->moveAway) {
+        scene->internal->cameraPosition.z -= 0.05f;
+    } else {
+        scene->internal->cameraPosition.z += 0.05f;
+    }
 }
 
 struct KCR_Vec2 perform_projection(struct KCR_Scene* scene, struct KCR_Vec3 *vector) {
