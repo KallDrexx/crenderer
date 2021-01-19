@@ -1,23 +1,23 @@
 #ifndef CRENDERER_VECTOR_H
 #define CRENDERER_VECTOR_H
 
-typedef struct {
+struct KCR_Vec2 {
     float x;
     float y;
-} Vec2;
+};
 
-typedef struct {
+struct KCR_Vec3 {
     float x;
     float y;
     float z;
-} Vec3;
+};
 
-float vec3_length(Vec3 *vector);
-Vec3 vec3_add(Vec3 *first, Vec3 *second);
-Vec3 vec3_sub(Vec3 *first, Vec3 *second);
-Vec3 vec3_mult(Vec3 *vector, float scalar);
-Vec3 vec3_div(Vec3 *vector, float scalar);
-float vec3_dot(Vec3 *first, Vec3 *second);
-Vec3 vec3_cross(Vec3 *first, Vec3 *second);
+float vec3_length(struct KCR_Vec3 *vector);
+struct KCR_Vec3 vec3_add(struct KCR_Vec3 *first, struct KCR_Vec3 *second);
+struct KCR_Vec3 vec3_sub(struct KCR_Vec3 *first, struct KCR_Vec3 *second);
+struct KCR_Vec3 vec3_mult(struct KCR_Vec3 *vector, float scalar);
+struct KCR_Vec3 vec3_div(struct KCR_Vec3 *vector, float scalar);
+float vec3_dot(struct KCR_Vec3 *first, struct KCR_Vec3 *second);
+struct KCR_Vec3 vec3_cross(struct KCR_Vec3 *first, struct KCR_Vec3 *second);
 
 #endif //CRENDERER_VECTOR_H

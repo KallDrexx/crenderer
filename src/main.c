@@ -4,7 +4,7 @@
 #include "scene/scene.h"
 
 bool isRunning;
-InputState inputState;
+struct KCR_InputState inputState;
 struct KCR_Display* display;
 
 bool setup(void) {

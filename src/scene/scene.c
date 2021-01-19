@@ -1,18 +1,17 @@
 #include "scene.h"
 #include "../math/vector.h"
 #include "../gfx/draw.h"
-#include "../gfx/display.h"
 
 #define NUM_POINTS (9 * 9 * 9)
-Vec3 cubePoints[NUM_POINTS];
-Vec3 cameraPosition = {0, 0, -5};
+struct KCR_Vec3 cubePoints[NUM_POINTS];
+struct KCR_Vec3 cameraPosition = {0, 0, -5};
 
 void scene_init(void) {
     int index = 0;
     for (float x = -1; x <= 1; x += 0.25) {
         for (float y = -1; y <= 1; y += 0.25) {
             for (float z = -1; z <= 1; z += 0.25) {
-                Vec3 vector = {x,y,z};
+                struct KCR_Vec3 vector = {x, y, z};
                 cubePoints[index] = vector;
                 index++;
             }
@@ -20,11 +19,11 @@ void scene_init(void) {
     }
 }
 
-void scene_update(InputState *inputState) {
+void scene_update(struct KCR_InputState* inputState) {
 
 }
 
-Vec2 perform_projection(Vec3 *vector) {
+struct KCR_Vec2 perform_projection(struct KCR_Vec3 *vector) {
     // basic perspective projection.  Assumes camera is facing down the z axis, no FOV considerations, and
     // projection plane is one unit in front of the camera.  Based on the idea that the triangle between the camera,
     // projection plane, and where the vector is projected to on the plane (what we need to figure out) is a similar
@@ -44,7 +43,7 @@ Vec2 perform_projection(Vec3 *vector) {
     // by simplifying the equation to a = b / d.
 
     float depth = vector->z - cameraPosition.z;
-    Vec2 result = {
+    struct KCR_Vec2 result = {
             vector->x / depth,
             vector->y / depth
     };
@@ -59,7 +58,7 @@ void scene_render(struct KCR_Display* display) {
     int centerWidth = display->windowWidth / 2;
     int centerHeight = display->windowHeight / 2;
     for (int index = 0; index < NUM_POINTS; index++) {
-        Vec2 projectedPoint = perform_projection(&cubePoints[index]);
+        struct KCR_Vec2 projectedPoint = perform_projection(&cubePoints[index]);
 
         float mult = (1 - cubePoints[index].z) / 2.0f;
         uint8_t red = (uint32_t) (((float) 0xFF) * mult);
