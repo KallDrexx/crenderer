@@ -8,7 +8,7 @@
 struct KCR_Scene_Internal {
     struct KCR_Vec3 cubePoints[NUM_POINTS];
     struct KCR_Vec3 cameraPosition;
-    bool moveAway;
+    struct KCR_Vec3 cubeRotation;
 };
 
 struct KCR_Scene* kcr_scene_init(void) {
@@ -17,8 +17,7 @@ struct KCR_Scene* kcr_scene_init(void) {
 
     scene->internal->cameraPosition.x = 0;
     scene->internal->cameraPosition.y = 0;
-    scene->internal->cameraPosition.z = -1;
-    scene->internal->moveAway = true;
+    scene->internal->cameraPosition.z = -8;
 
     int index = 0;
     for (float x = -1; x <= 1; x += 0.25) {
@@ -35,19 +34,9 @@ struct KCR_Scene* kcr_scene_init(void) {
 }
 
 void kcr_scene_update(struct KCR_Scene* scene, struct KCR_InputState* inputState) {
-    if (scene->internal->cameraPosition.z < -10) {
-        scene->internal->moveAway = false;
-    }
-    else if (scene->internal->cameraPosition.z > -2) {
-        scene->internal->moveAway = true;
-    }
-
-
-    if (scene->internal->moveAway) {
-        scene->internal->cameraPosition.z -= 0.05f;
-    } else {
-        scene->internal->cameraPosition.z += 0.05f;
-    }
+    scene->internal->cubeRotation.x += 0.01f;
+    scene->internal->cubeRotation.y += 0.01f;
+    scene->internal->cubeRotation.z += 0.01f;
 }
 
 struct KCR_Vec2 perform_projection(struct KCR_Scene* scene, struct KCR_Vec3 *vector) {
@@ -85,11 +74,11 @@ void kcr_scene_render(struct KCR_Scene* scene, struct KCR_Display* display) {
     int centerWidth = display->windowWidth / 2;
     int centerHeight = display->windowHeight / 2;
     for (int index = 0; index < NUM_POINTS; index++) {
-        struct KCR_Vec2 projectedPoint = perform_projection(scene, &scene->internal->cubePoints[index]);
+        struct KCR_Vec3 rotatedPointX = vec3_rotate_x(&scene->internal->cubePoints[index], scene->internal->cubeRotation.x);
+        struct KCR_Vec3 rotatedPointY = vec3_rotate_y(&rotatedPointX, scene->internal->cubeRotation.y);
+        struct KCR_Vec3 rotatedPointFinal = vec3_rotate_z(&rotatedPointY, scene->internal->cubeRotation.z);
 
-        float mult = (1 - scene->internal->cubePoints[index].z) / 2.0f;
-        uint8_t red = (uint32_t) (((float) 0xFF) * mult);
-        uint32_t color = (((uint32_t) red) << 4 * 4) | 0xFF000000;
+        struct KCR_Vec2 projectedPoint = perform_projection(scene, &rotatedPointFinal);
 
         draw_rect(
                 display,
@@ -97,7 +86,7 @@ void kcr_scene_render(struct KCR_Scene* scene, struct KCR_Display* display) {
                 projectedPoint.y * PIXELS_PER_UNIT + centerHeight,
                 RECT_SIZE,
                 RECT_SIZE,
-                color);
+                0xFFFF0000);
     }
 }
 
