@@ -33,10 +33,10 @@ struct KCR_Scene* kcr_scene_init(void) {
     return scene;
 }
 
-void kcr_scene_update(const struct KCR_Scene* scene) {
-    scene->internal->cubeRotation.x += 0.01f;
-    scene->internal->cubeRotation.y += 0.01f;
-    scene->internal->cubeRotation.z += 0.01f;
+void kcr_scene_update(const struct KCR_Scene* scene, float timeDelta) {
+    scene->internal->cubeRotation.x += 0.5f * timeDelta;
+    scene->internal->cubeRotation.y += 0.5f * timeDelta;
+    scene->internal->cubeRotation.z += 0.5f * timeDelta;
 }
 
 struct KCR_Vec2 perform_projection(struct KCR_Scene* scene, struct KCR_Vec3 *vector) {

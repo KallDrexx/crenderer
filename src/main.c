@@ -1,7 +1,11 @@
 #include <stdbool.h>
+#include <SDL2/SDL.h>
 #include "gfx/display.h"
 #include "input.h"
 #include "scene/scene.h"
+
+#define FPS 30
+#define FRAME_TARGET_TIME (1000/FPS)
 
 bool isRunning;
 struct KCR_InputState inputState;
@@ -30,8 +34,8 @@ void process_input(void) {
     }
 }
 
-void update(void) {
-    kcr_scene_update(scene);
+void update(float timeDelta) {
+    kcr_scene_update(scene, timeDelta);
 }
 
 void render(void) {
@@ -40,12 +44,21 @@ void render(void) {
     kcr_display_finish_frame(display);
 }
 
-int main() {
+int main(__attribute__((unused)) int argc, __attribute__((unused))char *argv[]) {
     isRunning = setup();
 
+    uint32_t previousFrameTime = 0;
     while (isRunning) {
+        int timeToWait = FRAME_TARGET_TIME - (SDL_GetTicks() - previousFrameTime);
+        if (timeToWait > 0 && timeToWait <= FRAME_TARGET_TIME) {
+            SDL_Delay(timeToWait);
+        }
+
+        float timeDelta = (SDL_GetTicks() - previousFrameTime) / 1000.0f;
+        previousFrameTime = SDL_GetTicks();
+        
         process_input();
-        update();
+        update(timeDelta);
         render();
     }
 
