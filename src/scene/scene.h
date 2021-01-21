@@ -10,7 +10,7 @@ struct KCR_Scene {
 };
 
 struct KCR_Scene* kcr_scene_init(void);
-void kcr_scene_update(struct KCR_Scene* scene, struct KCR_InputState* inputState);
+void kcr_scene_update(const struct KCR_Scene* scene);
 void kcr_scene_render(struct KCR_Scene* scene, struct KCR_Display* display);
 void kcr_scene_free(struct KCR_Scene* scene);
 

@@ -33,7 +33,7 @@ struct KCR_Scene* kcr_scene_init(void) {
     return scene;
 }
 
-void kcr_scene_update(struct KCR_Scene* scene, struct KCR_InputState* inputState) {
+void kcr_scene_update(const struct KCR_Scene* scene) {
     scene->internal->cubeRotation.x += 0.01f;
     scene->internal->cubeRotation.y += 0.01f;
     scene->internal->cubeRotation.z += 0.01f;

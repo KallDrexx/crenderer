@@ -31,7 +31,7 @@ void process_input(void) {
 }
 
 void update(void) {
-    kcr_scene_update(scene, &inputState);
+    kcr_scene_update(scene);
 }
 
 void render(void) {
@@ -40,7 +40,7 @@ void render(void) {
     kcr_display_finish_frame(display);
 }
 
-int main(int argc, char* args[]) {
+int main() {
     isRunning = setup();
 
     while (isRunning) {
