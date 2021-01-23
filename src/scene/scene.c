@@ -1,12 +1,11 @@
 #include <malloc.h>
-#include <stdbool.h>
 #include "scene.h"
 #include "../math/vector.h"
 #include "../gfx/draw.h"
+#include "mesh.h"
 
-#define NUM_POINTS (9 * 9 * 9)
 struct KCR_Scene_Internal {
-    struct KCR_Vec3 cubePoints[NUM_POINTS];
+    struct KCR_Mesh* cube;
     struct KCR_Vec3 cameraPosition;
     struct KCR_Vec3 cubeRotation;
 };
@@ -19,16 +18,7 @@ struct KCR_Scene* kcr_scene_init(void) {
     scene->internal->cameraPosition.y = 0;
     scene->internal->cameraPosition.z = -8;
 
-    int index = 0;
-    for (float x = -1; x <= 1; x += 0.25) {
-        for (float y = -1; y <= 1; y += 0.25) {
-            for (float z = -1; z <= 1; z += 0.25) {
-                struct KCR_Vec3 vector = {x, y, z};
-                scene->internal->cubePoints[index] = vector;
-                index++;
-            }
-        }
-    }
+    scene->internal->cube = mesh_create_cube(1);
 
     return scene;
 }
@@ -73,8 +63,9 @@ void kcr_scene_render(struct KCR_Scene* scene, struct KCR_Display* display) {
 
     int centerWidth = display->windowWidth / 2;
     int centerHeight = display->windowHeight / 2;
-    for (int index = 0; index < NUM_POINTS; index++) {
-        struct KCR_Vec3 rotatedPointX = vec3_rotate_x(&scene->internal->cubePoints[index], scene->internal->cubeRotation.x);
+    for (int index = 0; index < scene->internal->cube->verticesCount; index++) {
+        struct KCR_Vec3 vertex = scene->internal->cube->vertices[index];
+        struct KCR_Vec3 rotatedPointX = vec3_rotate_x(&vertex, scene->internal->cubeRotation.x);
         struct KCR_Vec3 rotatedPointY = vec3_rotate_y(&rotatedPointX, scene->internal->cubeRotation.y);
         struct KCR_Vec3 rotatedPointFinal = vec3_rotate_z(&rotatedPointY, scene->internal->cubeRotation.z);
 

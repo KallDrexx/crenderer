@@ -9,6 +9,6 @@ include_directories(${SDL2_INCLUDE_DIR})
 
 set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra")
 
-add_executable(crenderer src/main.c src/gfx/display.h src/gfx/display.c src/input.h src/input.c src/gfx/draw.c src/gfx/draw.h src/math/vector.c src/math/vector.h src/scene/scene.c src/scene/scene.h)
+add_executable(crenderer src/main.c src/gfx/display.h src/gfx/display.c src/input.h src/input.c src/gfx/draw.c src/gfx/draw.h src/math/vector.c src/math/vector.h src/scene/scene.c src/scene/scene.h src/scene/mesh.c src/scene/mesh.h)
 
 target_link_libraries(crenderer ${SDL2_LIBRARY})

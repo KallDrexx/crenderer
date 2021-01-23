@@ -56,7 +56,7 @@ int main(__attribute__((unused)) int argc, __attribute__((unused))char *argv[]) 
 
         float timeDelta = (SDL_GetTicks() - previousFrameTime) / 1000.0f;
         previousFrameTime = SDL_GetTicks();
-        
+
         process_input();
         update(timeDelta);
         render();
