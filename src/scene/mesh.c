@@ -39,7 +39,7 @@ struct KCR_Mesh* init_mesh_struct(int vertexCount, int faceCount) {
     return mesh;
 }
 
-struct KCR_Mesh* mesh_create_cube(void) {
+struct KCR_Mesh* kcr_mesh_create_cube(void) {
     struct KCR_Mesh* mesh = init_mesh_struct(8, 12);
     memcpy(mesh->vertices, cubeVectors, sizeof(cubeVectors));
     memcpy(mesh->faces, cubeFaces, sizeof(cubeFaces));
@@ -47,7 +47,7 @@ struct KCR_Mesh* mesh_create_cube(void) {
     return mesh;
 }
 
-void mesh_free(struct KCR_Mesh *mesh) {
+void kcr_mesh_free(struct KCR_Mesh *mesh) {
     if (mesh != NULL) {
         free(mesh->faces);
         free(mesh->vertices);

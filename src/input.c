@@ -5,7 +5,7 @@ void clear_state(struct KCR_InputState* state) {
     state->quit_requested = false;
 }
 
-void input_update_state(struct KCR_InputState* state) {
+void kcr_input_update_state(struct KCR_InputState* state) {
     clear_state(state);
 
     SDL_Event event;

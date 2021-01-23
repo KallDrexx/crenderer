@@ -27,7 +27,7 @@ bool setup(void) {
 }
 
 void process_input(void) {
-    input_update_state(&inputState);
+    kcr_input_update_state(&inputState);
 
     if (inputState.quit_requested) {
         isRunning = false;

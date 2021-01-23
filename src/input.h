@@ -7,6 +7,6 @@ struct KCR_InputState {
     bool quit_requested;
 };
 
-void input_update_state(struct KCR_InputState* state);
+void kcr_input_update_state(struct KCR_InputState* state);
 
 #endif //CRENDERER_INPUT_H
