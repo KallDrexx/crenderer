@@ -18,7 +18,7 @@ struct KCR_Scene* kcr_scene_init(void) {
     scene->internal->cameraPosition.y = 0;
     scene->internal->cameraPosition.z = -8;
 
-    scene->internal->cube = mesh_create_cube(1);
+    scene->internal->cube = mesh_create_cube();
 
     return scene;
 }

@@ -18,7 +18,7 @@ struct KCR_Mesh {
     struct KCR_Face *faces;
 };
 
-struct KCR_Mesh* mesh_create_cube(float size);
+struct KCR_Mesh* mesh_create_cube(void);
 void mesh_free(struct KCR_Mesh* mesh);
 
 #endif //CRENDERER_MESH_H
