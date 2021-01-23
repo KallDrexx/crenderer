@@ -18,15 +18,19 @@ struct KCR_Scene* kcr_scene_init(void) {
     scene->internal->cameraPosition.y = 0;
     scene->internal->cameraPosition.z = -8;
 
+    scene->internal->cubeRotation.x = 0;
+    scene->internal->cubeRotation.y = 0;
+    scene->internal->cubeRotation.z = 0;
+
     scene->internal->cube = kcr_mesh_create_cube();
 
     return scene;
 }
 
 void kcr_scene_update(const struct KCR_Scene* scene, float timeDelta) {
-    //scene->internal->cubeRotation.x += 0.5f * timeDelta;
-    //scene->internal->cubeRotation.y += 0.5f * timeDelta;
-    //scene->internal->cubeRotation.z += 0.5f * timeDelta;
+    scene->internal->cubeRotation.x += 0.5f * timeDelta;
+    scene->internal->cubeRotation.y += 0.5f * timeDelta;
+    scene->internal->cubeRotation.z += 0.5f * timeDelta;
 }
 
 struct KCR_Vec2 perform_projection(struct KCR_Scene* scene, struct KCR_Vec3 *vector) {
@@ -65,6 +69,7 @@ void kcr_scene_render(struct KCR_Scene* scene, struct KCR_Display* display) {
     int centerHeight = display->windowHeight / 2;
     for (int index = 0; index < scene->internal->cube->verticesCount; index++) {
         struct KCR_Vec3 vertex = scene->internal->cube->vertices[index];
+
         struct KCR_Vec3 rotatedPointX = kcr_vec3_rotate_x(&vertex, scene->internal->cubeRotation.x);
         struct KCR_Vec3 rotatedPointY = kcr_vec3_rotate_y(&rotatedPointX, scene->internal->cubeRotation.y);
         struct KCR_Vec3 rotatedPointFinal = kcr_vec3_rotate_z(&rotatedPointY, scene->internal->cubeRotation.z);
