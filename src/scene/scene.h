@@ -3,15 +3,16 @@
 
 #include "../gfx/display.h"
 #include "../input.h"
+#include "mesh.h"
 
-struct KCR_Scene_Internal;
 struct KCR_Scene {
-    struct KCR_Scene_Internal* internal;
+    struct KCR_Mesh* cube;
+    struct KCR_Vec3 cameraPosition;
+    struct KCR_Vec3 cubeRotation;
 };
 
 struct KCR_Scene* kcr_scene_create(void);
-void kcr_scene_update(const struct KCR_Scene* scene, float timeDelta);
-void kcr_scene_render(struct KCR_Scene* scene, struct KCR_Display* display);
+void kcr_scene_update(struct KCR_Scene* scene, float timeDelta);
 void kcr_scene_free(struct KCR_Scene* scene);
 
 #endif //CRENDERER_SCENE_H

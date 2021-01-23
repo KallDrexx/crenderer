@@ -1,98 +1,32 @@
 #include <malloc.h>
 #include "scene.h"
-#include "../math/vector.h"
 #include "../gfx/draw.h"
-#include "mesh.h"
-
-struct KCR_Scene_Internal {
-    struct KCR_Mesh* cube;
-    struct KCR_Vec3 cameraPosition;
-    struct KCR_Vec3 cubeRotation;
-};
 
 struct KCR_Scene* kcr_scene_create(void) {
     struct KCR_Scene* scene = malloc(sizeof(struct KCR_Scene));
-    scene->internal = malloc(sizeof(struct KCR_Scene_Internal));
 
-    scene->internal->cameraPosition.x = 0;
-    scene->internal->cameraPosition.y = 0;
-    scene->internal->cameraPosition.z = -8;
+    scene->cameraPosition.x = 0;
+    scene->cameraPosition.y = 0;
+    scene->cameraPosition.z = -8;
 
-    scene->internal->cubeRotation.x = 0;
-    scene->internal->cubeRotation.y = 0;
-    scene->internal->cubeRotation.z = 0;
+    scene->cubeRotation.x = 0;
+    scene->cubeRotation.y = 0;
+    scene->cubeRotation.z = 0;
 
-    scene->internal->cube = kcr_mesh_create_cube();
+    scene->cube = kcr_mesh_create_cube();
 
     return scene;
 }
 
-void kcr_scene_update(const struct KCR_Scene* scene, float timeDelta) {
-    scene->internal->cubeRotation.x += 0.5f * timeDelta;
-    scene->internal->cubeRotation.y += 0.5f * timeDelta;
-    scene->internal->cubeRotation.z += 0.5f * timeDelta;
-}
-
-struct KCR_Vec2 perform_projection(struct KCR_Scene* scene, struct KCR_Vec3 *vector) {
-    // basic perspective projection.  Assumes camera is facing down the z axis, no FOV considerations, and
-    // projection plane is one unit in front of the camera.  Based on the idea that the triangle between the camera,
-    // projection plane, and where the vector is projected to on the plane (what we need to figure out) is a similar
-    // triangle to the camera to the center of the vector in 3d space, to the real position on the current axis of the
-    // vector (x or y depending on which axis of the projection plane we are projecting onto at that time).
-    //
-    // This allows us to say for certain that since the ratio of the depth between the camera to the projection plane
-    // and the depth between the camera and the vector in 3d space is the same as the ratio between the camera to the
-    // vector on the calculated axis and the camera to the vector on the projected plane.  This gives us the equation
-    // a / b = c / d, where
-    //   * a = opposite length of smaller triangle (what we want to calculate)
-    //   * b = opposite length of the larger triangle
-    //   * c = adjacent length of the smaller triangle
-    //   * d = adjacent length of the larger triangle
-    //
-    // Since we are assuming the camera is 1 unit in front of the camera, this allows us to calculate the answer
-    // by simplifying the equation to a = b / d.
-
-    float depth = vector->z - scene->internal->cameraPosition.z;
-    struct KCR_Vec2 result = {
-            vector->x / depth,
-            vector->y / depth
-    };
-
-    return result;
-}
-
-void kcr_scene_render(struct KCR_Scene* scene, struct KCR_Display* display) {
-    #define PIXELS_PER_UNIT 2000
-    #define RECT_SIZE 8
-
-    int centerWidth = display->windowWidth / 2;
-    int centerHeight = display->windowHeight / 2;
-    for (int index = 0; index < scene->internal->cube->verticesCount; index++) {
-        struct KCR_Vec3 vertex = scene->internal->cube->vertices[index];
-
-        struct KCR_Vec3 rotatedPointX = kcr_vec3_rotate_x(&vertex, scene->internal->cubeRotation.x);
-        struct KCR_Vec3 rotatedPointY = kcr_vec3_rotate_y(&rotatedPointX, scene->internal->cubeRotation.y);
-        struct KCR_Vec3 rotatedPointFinal = kcr_vec3_rotate_z(&rotatedPointY, scene->internal->cubeRotation.z);
-
-        struct KCR_Vec2 projectedPoint = perform_projection(scene, &rotatedPointFinal);
-
-        kcr_draw_rect(
-                display,
-                projectedPoint.x * PIXELS_PER_UNIT + centerWidth,
-                projectedPoint.y * PIXELS_PER_UNIT + centerHeight,
-                RECT_SIZE,
-                RECT_SIZE,
-                0xFFFF0000);
-    }
+void kcr_scene_update(struct KCR_Scene* scene, float timeDelta) {
+    scene->cubeRotation.x += 0.5f * timeDelta;
+    scene->cubeRotation.y += 0.5f * timeDelta;
+    scene->cubeRotation.z += 0.5f * timeDelta;
 }
 
 void kcr_scene_free(struct KCR_Scene *scene) {
     if (scene != NULL) {
-        if (scene->internal != NULL) {
-            kcr_mesh_free(scene->internal->cube);
-        }
-
-        free(scene->internal);
+        kcr_mesh_free(scene->cube);
     }
 
     free(scene);

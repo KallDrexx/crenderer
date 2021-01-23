@@ -3,6 +3,7 @@
 #include "gfx/display.h"
 #include "input.h"
 #include "scene/scene.h"
+#include "gfx/renderer.h"
 
 #define FPS 30
 #define FRAME_TARGET_TIME (1000/FPS)
@@ -40,7 +41,7 @@ void update(float timeDelta) {
 
 void render(void) {
     kcr_display_begin_frame(display);
-    kcr_scene_render(scene, display);
+    kcr_render(display, scene);
     kcr_display_finish_frame(display);
 }
 

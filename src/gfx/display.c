@@ -105,6 +105,6 @@ void kcr_display_finish_frame(struct KCR_Display* display) {
     SDL_RenderPresent(display->internal->renderer);
 }
 
-int kcr_display_get_pixel_index(struct KCR_Display* display, int x, int y) {
+int kcr_display_get_pixel_index(const struct KCR_Display* display, int x, int y) {
     return y * display->windowWidth + x;
 }
