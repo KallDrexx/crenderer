@@ -12,7 +12,7 @@ struct KCR_Display {
     struct KCR_Display_Internal* internal;
 };
 
-struct KCR_Display* kcr_display_init(void);
+struct KCR_Display* kcr_display_create(void);
 void kcr_display_free(struct KCR_Display* display);
 void kcr_display_begin_frame(struct KCR_Display* display);
 void kcr_display_finish_frame(struct KCR_Display* display);

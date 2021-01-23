@@ -13,12 +13,12 @@ struct KCR_Display* display;
 struct KCR_Scene* scene;
 
 bool setup(void) {
-    display = kcr_display_init();
+    display = kcr_display_create();
     if (display == NULL) {
         return false;
     }
 
-    scene = kcr_scene_init();
+    scene = kcr_scene_create();
     if (scene == NULL) {
         return false;
     }

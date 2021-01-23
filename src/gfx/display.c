@@ -8,7 +8,7 @@ struct KCR_Display_Internal {
     SDL_Renderer* renderer;
 };
 
-struct KCR_Display* kcr_display_init(void) {
+struct KCR_Display* kcr_display_create(void) {
     if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
         fprintf(stderr, "Error initializing SDL: %s.\n", SDL_GetError());
         return NULL;

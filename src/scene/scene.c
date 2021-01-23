@@ -10,7 +10,7 @@ struct KCR_Scene_Internal {
     struct KCR_Vec3 cubeRotation;
 };
 
-struct KCR_Scene* kcr_scene_init(void) {
+struct KCR_Scene* kcr_scene_create(void) {
     struct KCR_Scene* scene = malloc(sizeof(struct KCR_Scene));
     scene->internal = malloc(sizeof(struct KCR_Scene_Internal));
 

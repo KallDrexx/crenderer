@@ -9,7 +9,7 @@ struct KCR_Scene {
     struct KCR_Scene_Internal* internal;
 };
 
-struct KCR_Scene* kcr_scene_init(void);
+struct KCR_Scene* kcr_scene_create(void);
 void kcr_scene_update(const struct KCR_Scene* scene, float timeDelta);
 void kcr_scene_render(struct KCR_Scene* scene, struct KCR_Display* display);
 void kcr_scene_free(struct KCR_Scene* scene);
