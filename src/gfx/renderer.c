@@ -36,16 +36,21 @@ struct KCR_Vec2 perform_projection(const struct KCR_Scene* scene, const struct K
 }
 
 struct TransformedFace transformFace(const struct KCR_Face* face, const struct KCR_Mesh* mesh, const struct KCR_Vec3* rotation) {
-    struct TransformedFace transformedFace;
-    transformedFace.v1 = kcr_vec3_rotate_x(&mesh->vertices[face->vertexIndex1], rotation->x);
+    struct TransformedFace transformedFace = {
+            mesh->vertices[face->vertexIndex1],
+            mesh->vertices[face->vertexIndex2],
+            mesh->vertices[face->vertexIndex3],
+    };
+
+    transformedFace.v1 = kcr_vec3_rotate_x(&transformedFace.v1, rotation->x);
     transformedFace.v1 = kcr_vec3_rotate_y(&transformedFace.v1, rotation->y);
     transformedFace.v1 = kcr_vec3_rotate_z(&transformedFace.v1, rotation->z);
 
-    transformedFace.v2 = kcr_vec3_rotate_x(&mesh->vertices[face->vertexIndex2], rotation->x);
+    transformedFace.v2 = kcr_vec3_rotate_x(&transformedFace.v2, rotation->x);
     transformedFace.v2 = kcr_vec3_rotate_y(&transformedFace.v2, rotation->y);
     transformedFace.v2 = kcr_vec3_rotate_z(&transformedFace.v2, rotation->z);
 
-    transformedFace.v3 = kcr_vec3_rotate_x(&mesh->vertices[face->vertexIndex3], rotation->x);
+    transformedFace.v3 = kcr_vec3_rotate_x(&transformedFace.v3, rotation->x);
     transformedFace.v3 = kcr_vec3_rotate_y(&transformedFace.v3, rotation->y);
     transformedFace.v3 = kcr_vec3_rotate_z(&transformedFace.v3, rotation->z);
 
