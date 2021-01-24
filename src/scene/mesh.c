@@ -23,7 +23,7 @@ struct KCR_Face cubeFaces[] = {
     {2, 1, 5}, // bottom-forward
     {2, 5, 6}, // bottom-rear
     {3, 4, 0}, // top-forward
-    {3, 7, 3}, // rop-rear
+    {3, 7, 4}, // top-rear
     {5, 4, 7}, // back-top
     {5, 7, 6}, // back-bottom
 };
