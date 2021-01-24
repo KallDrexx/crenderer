@@ -22,5 +22,6 @@ struct KCR_Vec3 kcr_vec3_cross(const struct KCR_Vec3 *first, const struct KCR_Ve
 struct KCR_Vec3 kcr_vec3_rotate_x(const struct KCR_Vec3 *vector, float angle);
 struct KCR_Vec3 kcr_vec3_rotate_y(const struct KCR_Vec3 *vector, float angle);
 struct KCR_Vec3 kcr_vec3_rotate_z(const struct KCR_Vec3 *vector, float angle);
+struct KCR_Vec3 kcr_vec3_to_unit(const struct KCR_Vec3 *vector);
 
 #endif //CRENDERER_VECTOR_H
