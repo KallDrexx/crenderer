@@ -35,6 +35,17 @@ struct KCR_Vec2 perform_projection(const struct KCR_Scene* scene, const struct K
     return result;
 }
 
+void adjust_to_screen_space(const struct KCR_Display* display, struct KCR_Vec2* point) {
+    #define PIXELS_PER_UNIT 2000
+
+    int centerWidth = display->windowWidth / 2;
+    int centerHeight = display->windowHeight / 2;
+
+    // Negate y value to accommodate the texture being positive Y going down
+    point->x = point->x * PIXELS_PER_UNIT + (float) centerWidth;
+    point->y = -point->y * PIXELS_PER_UNIT + (float) centerHeight;
+}
+
 struct TransformedFace transformFace(const struct KCR_Face* face, const struct KCR_Mesh* mesh, const struct KCR_Vec3* rotation) {
     struct TransformedFace transformedFace = {
             mesh->vertices[face->vertexIndex1],
@@ -58,23 +69,15 @@ struct TransformedFace transformFace(const struct KCR_Face* face, const struct K
 }
 
 void render_face(const struct KCR_Display* display, const struct KCR_Scene* scene, const struct TransformedFace* face) {
-    #define PIXELS_PER_UNIT 2000
-
     struct KCR_Vec2 projectedPoints[] = {
             perform_projection(scene, &face->v1),
             perform_projection(scene, &face->v2),
             perform_projection(scene, &face->v3),
     };
 
-    int centerWidth = display->windowWidth / 2;
-    int centerHeight = display->windowHeight / 2;
-    for (int i = 0; i < 3; i++) {
-        struct KCR_Vec2* point = &projectedPoints[i];
-
-        // Adjust for the screen positioning
-        point->x = point->x * PIXELS_PER_UNIT + (float) centerWidth;
-        point->y = point->y * PIXELS_PER_UNIT + (float) centerHeight;
-    }
+    adjust_to_screen_space(display, &projectedPoints[0]);
+    adjust_to_screen_space(display, &projectedPoints[1]);
+    adjust_to_screen_space(display, &projectedPoints[2]);
 
     kcr_draw_line(display, (int) projectedPoints[0].x, (int) projectedPoints[0].y, (int) projectedPoints[1].x, (int) projectedPoints[1].y, 0xFFFFFFFF);
     kcr_draw_line(display, (int) projectedPoints[1].x, (int) projectedPoints[1].y, (int) projectedPoints[2].x, (int) projectedPoints[2].y, 0xFFFFFFFF);
@@ -85,6 +88,7 @@ void kcr_render(const struct KCR_Display *display, const struct KCR_Scene *scene
     for (int idx = 0; idx < scene->cube->faceCount; idx++) {
         const struct KCR_Face* face = &scene->cube->faces[idx];
         const struct TransformedFace transformedFace = transformFace(face, scene->cube, &scene->cubeRotation);
+
         render_face(display, scene, &transformedFace);
     }
 }
