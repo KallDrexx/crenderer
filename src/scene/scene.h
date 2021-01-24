@@ -12,7 +12,7 @@ struct KCR_Scene {
 };
 
 struct KCR_Scene* kcr_scene_create(void);
-void kcr_scene_update(struct KCR_Scene* scene, float timeDelta);
+void kcr_scene_update(struct KCR_Scene* scene, const struct KCR_InputState* inputState,  float timeDelta);
 void kcr_scene_free(struct KCR_Scene* scene);
 
 #endif //CRENDERER_SCENE_H

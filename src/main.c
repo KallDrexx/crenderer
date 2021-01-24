@@ -36,7 +36,7 @@ void process_input(void) {
 }
 
 void update(float timeDelta) {
-    kcr_scene_update(scene, timeDelta);
+    kcr_scene_update(scene, &inputState, timeDelta);
 }
 
 void render(void) {

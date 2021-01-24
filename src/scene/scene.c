@@ -17,10 +17,21 @@ struct KCR_Scene* kcr_scene_create(void) {
     return scene;
 }
 
-void kcr_scene_update(struct KCR_Scene* scene, float timeDelta) {
-    scene->cubeRotation.x += 0.5f * timeDelta;
-    scene->cubeRotation.y += 0.5f * timeDelta;
-    scene->cubeRotation.z += 0.5f * timeDelta;
+void kcr_scene_update(struct KCR_Scene* scene, const struct KCR_InputState* inputState, float timeDelta) {
+    #define KEYBOARD_ROTATION_SPEED 0.5f
+    #define MOUSE_ROTATION_SPEED 0.005f
+
+    if (inputState->up_pressed) scene->cubeRotation.x += KEYBOARD_ROTATION_SPEED * timeDelta;
+    if (inputState->down_pressed) scene->cubeRotation.x -= KEYBOARD_ROTATION_SPEED * timeDelta;
+    if (inputState->left_pressed) scene->cubeRotation.y += KEYBOARD_ROTATION_SPEED * timeDelta;
+    if (inputState->right_pressed) scene->cubeRotation.y -= KEYBOARD_ROTATION_SPEED * timeDelta;
+    if (inputState->home_pressed) scene->cubeRotation.z -= KEYBOARD_ROTATION_SPEED * timeDelta;
+    if (inputState->end_pressed) scene->cubeRotation.z += KEYBOARD_ROTATION_SPEED * timeDelta;
+
+    if (inputState->left_mouse_down) {
+        scene->cubeRotation.y -= MOUSE_ROTATION_SPEED * inputState->mouse_drag_x;
+        scene->cubeRotation.x -= MOUSE_ROTATION_SPEED * inputState->mouse_drag_y;
+    }
 }
 
 void kcr_scene_free(struct KCR_Scene *scene) {
