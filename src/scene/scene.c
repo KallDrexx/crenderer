@@ -1,6 +1,5 @@
 #include <malloc.h>
 #include "scene.h"
-#include "../gfx/draw.h"
 
 struct KCR_Scene* kcr_scene_create(void) {
     struct KCR_Scene* scene = malloc(sizeof(struct KCR_Scene));
