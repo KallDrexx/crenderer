@@ -73,9 +73,9 @@ struct KCR_Vec3 kcr_vec3_rotate_x(const struct KCR_Vec3 *vector, float angle) {
 
 struct KCR_Vec3 kcr_vec3_rotate_y(const struct KCR_Vec3 *vector, float angle) {
     struct KCR_Vec3 result = {
-            vector->x * cosf(angle) - vector->z * sinf(angle),
+            vector->z * sinf(angle) + vector->x * cosf(angle),
             vector->y,
-            vector->x * sinf(angle) + vector->z * cosf(angle),
+            vector->z * cosf(angle) - vector->x * sinf(angle),
     };
 
     return result;
