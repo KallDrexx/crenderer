@@ -25,42 +25,16 @@ void draw_rect(const struct KCR_Display* display, int x, int y, int width, int h
 void draw_line(const struct KCR_Display *display, int x1, int y1, int x2, int y2, uint32_t color) {
     const int changeInY = y2 - y1;
     const int changeInX = x2 - x1;
+    const int numberOfPoints = abs(changeInY) > abs(changeInX) ? abs(changeInY) : abs(changeInX);
+    const float xIncrement = (float) changeInX / (float) numberOfPoints;
+    const float yIncrement = (float) changeInY / (float) numberOfPoints;
 
-    // Use separate variables to prevent incorrect slope
-    const int minX = x1 < x2 ? x1 : x2;
-    const int maxX = x1 < x2 ? x2 : x1;
-    const int minY = y1 < y2 ? y1 : y2;
-    const int maxY = y1 < y2 ? y2 : y1;
-
-    if (changeInX == 0) {
-        // straight line down
-        for (int y = minY; y <= maxY; y++) {
-            draw_pixel(display, x1, y, color);
-        }
-    } else if (changeInY == 0) {
-        // straight line across
-        for (int x = minX; x <= maxX; x++) {
-            draw_pixel(display, x, y1, color);
-        }
-    } else {
-        // sloped line
-        float slope = (float) changeInY / (float) changeInX;
-        const float yAxisIntercept = (float) y1 - slope * (float) x1;
-
-        // We need to know if we need to walk the x or y axis to make sure the line is fully filled in, otherwise we
-        // will end up with a dotted line due to incrementing too fast.  Make sure to absolute value the changes
-        // since we got the changes prior to normalizing the direction.
-        if (abs(changeInX) < abs(changeInY)) {
-            for (int y = minY; y <= maxY; y++) {
-                int x = (int) (((float)y - yAxisIntercept) / slope);
-                draw_pixel(display, x, y, color);
-            }
-        } else {
-            for (int x = minX; x <= maxX; x++) {
-                int y = (int) (slope * (float) x + yAxisIntercept);
-                draw_pixel(display, x, y, color);
-            }
-        }
+    float currentX = (float) x1;
+    float currentY = (float) y1;
+    for (int i = 0; i <= numberOfPoints; i++) {
+        draw_pixel(display, (int) roundf(currentX), (int) roundf(currentY), color);
+        currentX += xIncrement;
+        currentY += yIncrement;
     }
 }
 
