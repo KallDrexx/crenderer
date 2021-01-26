@@ -122,7 +122,7 @@ void render_face(const struct KCR_Display* display, const struct KCR_Scene* scen
 void kcr_render(const struct KCR_Display *display, const struct KCR_Scene *scene) {
     for (int idx = 0; idx < kcr_list_length(scene->cube->faceList); idx++) {
         const struct KCR_Face* face = &scene->cube->faceList[idx];
-        const struct TransformedFace transformedFace = transformFace(face, scene->cube, &scene->cubeRotation);
+        const struct TransformedFace transformedFace = transformFace(face, scene->cube, &scene->cube->rotation);
 
         render_face(display, scene, &transformedFace);
     }

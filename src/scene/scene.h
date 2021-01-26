@@ -8,7 +8,6 @@
 struct KCR_Scene {
     struct KCR_Mesh* cube;
     struct KCR_Vec3 cameraPosition;
-    struct KCR_Vec3 cubeRotation;
 };
 
 struct KCR_Scene* kcr_scene_create(void);

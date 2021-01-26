@@ -34,6 +34,10 @@ struct KCR_Mesh* init_mesh_struct(int vertexCount, int faceCount) {
     mesh->vertexList = kcr_list_create(vertexCount, sizeof(struct KCR_Vec3));
     mesh->faceList = kcr_list_create(faceCount, sizeof(struct KCR_Face));
 
+    mesh->rotation.x = 0;
+    mesh->rotation.y = 0;
+    mesh->rotation.z = 0;
+
     return mesh;
 }
 

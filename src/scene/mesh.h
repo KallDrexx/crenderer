@@ -13,6 +13,7 @@ struct KCR_Face {
 struct KCR_Mesh {
     struct KCR_Vec3* vertexList;
     struct KCR_Face* faceList;
+    struct KCR_Vec3 rotation;
 };
 
 struct KCR_Mesh* kcr_mesh_create_cube(void);
