@@ -1,5 +1,6 @@
 #include <math.h>
 #include "renderer.h"
+#include "../list.h"
 
 struct TransformedFace {
     struct KCR_Vec3 v1;
@@ -79,9 +80,9 @@ void adjust_to_screen_space(const struct KCR_Display* display, struct KCR_Vec2* 
 
 struct TransformedFace transformFace(const struct KCR_Face* face, const struct KCR_Mesh* mesh, const struct KCR_Vec3* rotation) {
     struct TransformedFace transformedFace = {
-            mesh->vertices[face->vertexIndex1],
-            mesh->vertices[face->vertexIndex2],
-            mesh->vertices[face->vertexIndex3],
+            mesh->vertexList[face->vertexIndex1],
+            mesh->vertexList[face->vertexIndex2],
+            mesh->vertexList[face->vertexIndex3],
     };
 
     transformedFace.v1 = kcr_vec3_rotate_x(&transformedFace.v1, rotation->x);
@@ -119,8 +120,8 @@ void render_face(const struct KCR_Display* display, const struct KCR_Scene* scen
 }
 
 void kcr_render(const struct KCR_Display *display, const struct KCR_Scene *scene) {
-    for (int idx = 0; idx < scene->cube->faceCount; idx++) {
-        const struct KCR_Face* face = &scene->cube->faces[idx];
+    for (int idx = 0; idx < kcr_list_length(scene->cube->faceList); idx++) {
+        const struct KCR_Face* face = &scene->cube->faceList[idx];
         const struct TransformedFace transformedFace = transformFace(face, scene->cube, &scene->cubeRotation);
 
         render_face(display, scene, &transformedFace);

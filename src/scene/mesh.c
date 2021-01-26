@@ -1,6 +1,7 @@
 #include <malloc.h>
 #include <mem.h>
 #include "mesh.h"
+#include "../list.h"
 
 struct KCR_Vec3 cubeVectors[] = {
     {1, 1, -1}, // front top right
@@ -30,27 +31,29 @@ struct KCR_Face cubeFaces[] = {
 
 struct KCR_Mesh* init_mesh_struct(int vertexCount, int faceCount) {
     struct KCR_Mesh* mesh = malloc(sizeof(struct KCR_Mesh));
-    mesh->verticesCount = vertexCount;
-    mesh->faceCount = faceCount;
-
-    mesh->vertices = malloc(sizeof(struct KCR_Vec3) * vertexCount);
-    mesh->faces = malloc(sizeof(struct KCR_Face) * faceCount);
+    mesh->vertexList = kcr_list_create(vertexCount, sizeof(struct KCR_Vec3));
+    mesh->faceList = kcr_list_create(faceCount, sizeof(struct KCR_Face));
 
     return mesh;
 }
 
 struct KCR_Mesh* kcr_mesh_create_cube(void) {
     struct KCR_Mesh* mesh = init_mesh_struct(8, 12);
-    memcpy(mesh->vertices, cubeVectors, sizeof(cubeVectors));
-    memcpy(mesh->faces, cubeFaces, sizeof(cubeFaces));
+    for (int x = 0; x < 8; x++) {
+        mesh->vertexList = kcr_list_append(mesh->vertexList, &cubeVectors[x], sizeof(struct KCR_Vec3));
+    }
+
+    for (int x = 0; x < 12; x++) {
+        mesh->faceList = kcr_list_append(mesh->faceList, &cubeFaces[x], sizeof(struct KCR_Face));
+    }
 
     return mesh;
 }
 
 void kcr_mesh_free(struct KCR_Mesh *mesh) {
     if (mesh != NULL) {
-        free(mesh->faces);
-        free(mesh->vertices);
+        kcr_list_free(mesh->faceList);
+        kcr_list_free(mesh->vertexList);
     }
 
     free(mesh);

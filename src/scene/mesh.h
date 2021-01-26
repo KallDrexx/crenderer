@@ -11,11 +11,8 @@ struct KCR_Face {
 };
 
 struct KCR_Mesh {
-    int verticesCount;
-    int faceCount;
-
-    struct KCR_Vec3 *vertices;
-    struct KCR_Face *faces;
+    struct KCR_Vec3* vertexList;
+    struct KCR_Face* faceList;
 };
 
 struct KCR_Mesh* kcr_mesh_create_cube(void);
