@@ -6,7 +6,7 @@
 #include "mesh.h"
 
 struct KCR_Scene {
-    struct KCR_Mesh* cube;
+    struct KCR_Mesh* mesh;
     struct KCR_Vec3 cameraPosition;
 };
 

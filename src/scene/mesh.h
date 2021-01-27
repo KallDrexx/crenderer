@@ -16,7 +16,7 @@ struct KCR_Mesh {
     struct KCR_Vec3 rotation;
 };
 
-struct KCR_Mesh* kcr_mesh_create_cube(void);
+struct KCR_Mesh* kcr_mesh_from_obj_file(char* filename);
 void kcr_mesh_free(struct KCR_Mesh* mesh);
 
 #endif //CRENDERER_MESH_H

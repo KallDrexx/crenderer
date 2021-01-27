@@ -12,3 +12,5 @@ set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra")
 add_executable(crenderer src/main.c src/gfx/display.h src/gfx/display.c src/input.h src/input.c src/math/vector.c src/math/vector.h src/scene/scene.c src/scene/scene.h src/scene/mesh.c src/scene/mesh.h src/gfx/renderer.c src/gfx/renderer.h src/math/angles.c src/math/angles.h src/list.c src/list.h)
 
 target_link_libraries(crenderer ${SDL2_LIBRARY})
+
+file(COPY ${CMAKE_CURRENT_LIST_DIR}/assets DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
