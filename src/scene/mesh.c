@@ -39,8 +39,8 @@ struct KCR_Mesh* kcr_mesh_from_obj_file(char* filename) {
         return NULL;
     }
 
-    struct KCR_Vec3* vertexList = kcr_list_create(10, sizeof(struct KCR_Vec3));
-    struct KCR_Face* faceList = kcr_list_create(10, sizeof(struct KCR_Face));
+    struct KCR_Vec3* vertexList = kcr_list_create(sizeof(struct KCR_Vec3));
+    struct KCR_Face* faceList = kcr_list_create(sizeof(struct KCR_Face));
     char buffer[BUFFER_SIZE];
     unsigned int line = 0;
 
@@ -63,7 +63,7 @@ struct KCR_Mesh* kcr_mesh_from_obj_file(char* filename) {
                 }
 
                 struct KCR_Vec3 vertex = {values[0], values[1], values[2]};
-                vertexList = kcr_list_append(vertexList, &vertex, sizeof(struct KCR_Vec3));
+                kcr_list_append((void**) &vertexList, &vertex);
             }
 
             else if (strncmp(buffer, "f ", 2) == 0) {
@@ -81,7 +81,7 @@ struct KCR_Mesh* kcr_mesh_from_obj_file(char* filename) {
                         break;
                     }
 
-                    if (indices[index] <= 0 || indices[index] > kcr_list_length(vertexList)) {
+                    if (indices[index] <= 0 || indices[index] > (int) kcr_list_length(vertexList)) {
                         fprintf(stderr, "Line %i has invalid face index of %i\n", line, indices[index]);
                         goto nextLoop;
                     }
@@ -93,7 +93,7 @@ struct KCR_Mesh* kcr_mesh_from_obj_file(char* filename) {
 
                         // obj has them listed in CCW, right now our engine uses cw
                         struct KCR_Face face = {v3 - 1, v2 - 1, v1 - 1};
-                        faceList = kcr_list_append(faceList, &face, sizeof(struct KCR_Face));
+                        kcr_list_append((void**) &faceList, &face);
                         firstIndex++;
                     }
 
