@@ -88,14 +88,23 @@ struct TransformedFace transformFace(const struct KCR_Face* face, const struct K
     transformedFace.v1 = kcr_vec3_rotate_x(&transformedFace.v1, rotation->x);
     transformedFace.v1 = kcr_vec3_rotate_y(&transformedFace.v1, rotation->y);
     transformedFace.v1 = kcr_vec3_rotate_z(&transformedFace.v1, rotation->z);
+    transformedFace.v1.x += mesh->position.x;
+    transformedFace.v1.y += mesh->position.y;
+    transformedFace.v1.z += mesh->position.z;
 
     transformedFace.v2 = kcr_vec3_rotate_x(&transformedFace.v2, rotation->x);
     transformedFace.v2 = kcr_vec3_rotate_y(&transformedFace.v2, rotation->y);
     transformedFace.v2 = kcr_vec3_rotate_z(&transformedFace.v2, rotation->z);
+    transformedFace.v2.x += mesh->position.x;
+    transformedFace.v2.y += mesh->position.y;
+    transformedFace.v2.z += mesh->position.z;
 
     transformedFace.v3 = kcr_vec3_rotate_x(&transformedFace.v3, rotation->x);
     transformedFace.v3 = kcr_vec3_rotate_y(&transformedFace.v3, rotation->y);
     transformedFace.v3 = kcr_vec3_rotate_z(&transformedFace.v3, rotation->z);
+    transformedFace.v3.x += mesh->position.x;
+    transformedFace.v3.y += mesh->position.y;
+    transformedFace.v3.z += mesh->position.z;
 
     return transformedFace;
 }
@@ -124,6 +133,16 @@ void kcr_render(const struct KCR_Display *display, const struct KCR_Scene *scene
         const struct KCR_Face* face = &scene->mesh->faceList[idx];
         const struct TransformedFace transformedFace = transformFace(face, scene->mesh, &scene->mesh->rotation);
 
-        render_face(display, scene, &transformedFace);
+        const struct KCR_Vec3 v1 = kcr_vec3_sub(&transformedFace.v2, &transformedFace.v1);
+        const struct KCR_Vec3 v2 = kcr_vec3_sub(&transformedFace.v3, &transformedFace.v1);
+        const struct KCR_Vec3 normal = kcr_vec3_cross(&v1, &v2);
+        const struct KCR_Vec3 vertexToCameraVector = kcr_vec3_sub(&transformedFace.v1, &scene->cameraPosition);
+        const float alignment = kcr_vec3_dot(&normal, &vertexToCameraVector);
+
+        if (alignment > 0) {
+            // Since the normal is pointing in generally the same direction as the vector of the face to the camera
+            // then the face is facing towards the camera, and we need to cull.
+            render_face(display, scene, &transformedFace);
+        }
     }
 }

@@ -37,9 +37,9 @@ struct KCR_Vec3 kcr_vec3_mult(const struct KCR_Vec3 *vector, float scalar) {
 
 struct KCR_Vec3 kcr_vec3_div(const struct KCR_Vec3 *vector, float scalar) {
     struct KCR_Vec3 result = {
-            vector->x / scalar,
-            vector->y / scalar,
-            vector->z / scalar,
+            scalar != 0 ? vector->x / scalar : 0,
+            scalar != 0 ? vector->y / scalar : 0,
+            scalar != 0 ? vector->z / scalar : 0,
     };
 
     return result;

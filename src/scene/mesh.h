@@ -14,6 +14,7 @@ struct KCR_Mesh {
     struct KCR_Vec3* vertexList;
     struct KCR_Face* faceList;
     struct KCR_Vec3 rotation;
+    struct KCR_Vec3 position;
 };
 
 struct KCR_Mesh* kcr_mesh_from_obj_file(char* filename);

@@ -6,9 +6,12 @@ struct KCR_Scene* kcr_scene_create(void) {
 
     scene->cameraPosition.x = 0;
     scene->cameraPosition.y = 0;
-    scene->cameraPosition.z = -8;
+    scene->cameraPosition.z = 0;
 
-    scene->mesh = kcr_mesh_from_obj_file("assets/cube.obj");
+    scene->mesh = kcr_mesh_from_obj_file("assets/teapot.obj");
+    scene->mesh->position.x = 0;
+    scene->mesh->position.y = 0;
+    scene->mesh->position.z = -100;
 
     return scene;
 }
