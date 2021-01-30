@@ -8,27 +8,43 @@ void handle_keyup_event(struct KCR_InputState *state, SDL_Event *event) {
             break;
 
         case SDLK_LEFT:
-            state->left_pressed = false;
+            state->left_down = false;
             break;
 
         case SDLK_RIGHT:
-            state->right_pressed = false;
+            state->right_down = false;
             break;
 
         case SDLK_UP:
-            state->up_pressed = false;
+            state->up_down = false;
             break;
 
         case SDLK_DOWN:
-            state->down_pressed = false;
+            state->down_down = false;
             break;
 
         case SDLK_HOME:
-            state->home_pressed = false;
+            state->home_down = false;
             break;
 
         case SDLK_END:
-            state->end_pressed = false;
+            state->end_down = false;
+            break;
+
+        case SDLK_F1:
+            state->f1_pressed = true; // only trigger on release
+            break;
+
+        case SDLK_F2:
+            state->f2_pressed = true; // only trigger on release
+            break;
+
+        case SDLK_MINUS:
+            state->minus_down = false;
+            break;
+
+        case SDLK_EQUALS:
+            state->equals_down = false;
             break;
     }
 }
@@ -36,32 +52,42 @@ void handle_keyup_event(struct KCR_InputState *state, SDL_Event *event) {
 void handle_keydown_event(struct KCR_InputState *state, SDL_Event *event) {
     switch ((*event).key.keysym.sym) {
         case SDLK_LEFT:
-            state->left_pressed = true;
+            state->left_down = true;
             break;
 
         case SDLK_RIGHT:
-            state->right_pressed = true;
+            state->right_down = true;
             break;
 
         case SDLK_UP:
-            state->up_pressed = true;
+            state->up_down = true;
             break;
 
         case SDLK_DOWN:
-            state->down_pressed = true;
+            state->down_down = true;
             break;
 
         case SDLK_HOME:
-            state->home_pressed = true;
+            state->home_down = true;
             break;
 
         case SDLK_END:
-            state->end_pressed = true;
+            state->end_down = true;
+            break;
+
+        case SDLK_MINUS:
+            state->minus_down = true;
+            break;
+
+        case SDLK_EQUALS:
+            state->equals_down = true;
             break;
     }
 }
 
 void kcr_input_update_state(struct KCR_InputState* state) {
+    state->f1_pressed = false;
+    state->f2_pressed = false;
     state->mouse_drag_y = 0;
     state->mouse_drag_x = 0;
 

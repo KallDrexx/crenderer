@@ -1,4 +1,5 @@
 #include <math.h>
+#include <assert.h>
 #include "renderer.h"
 #include "../list.h"
 
@@ -78,7 +79,11 @@ void adjust_to_screen_space(const struct KCR_Display* display, struct KCR_Vec2* 
     point->y = -point->y * PIXELS_PER_UNIT + (float) centerHeight;
 }
 
-struct TransformedFace transformFace(const struct KCR_Face* face, const struct KCR_Mesh* mesh, const struct KCR_Vec3* rotation) {
+struct TransformedFace transformFace(const struct KCR_Face* face,
+        const struct KCR_Mesh* mesh,
+        const struct KCR_Vec3* rotation,
+        const struct KCR_Vec3* position) {
+
     struct TransformedFace transformedFace = {
             mesh->vertexList[face->vertexIndex1],
             mesh->vertexList[face->vertexIndex2],
@@ -88,23 +93,23 @@ struct TransformedFace transformFace(const struct KCR_Face* face, const struct K
     transformedFace.v1 = kcr_vec3_rotate_x(&transformedFace.v1, rotation->x);
     transformedFace.v1 = kcr_vec3_rotate_y(&transformedFace.v1, rotation->y);
     transformedFace.v1 = kcr_vec3_rotate_z(&transformedFace.v1, rotation->z);
-    transformedFace.v1.x += mesh->position.x;
-    transformedFace.v1.y += mesh->position.y;
-    transformedFace.v1.z += mesh->position.z;
+    transformedFace.v1.x += position->x;
+    transformedFace.v1.y += position->y;
+    transformedFace.v1.z += position->z;
 
     transformedFace.v2 = kcr_vec3_rotate_x(&transformedFace.v2, rotation->x);
     transformedFace.v2 = kcr_vec3_rotate_y(&transformedFace.v2, rotation->y);
     transformedFace.v2 = kcr_vec3_rotate_z(&transformedFace.v2, rotation->z);
-    transformedFace.v2.x += mesh->position.x;
-    transformedFace.v2.y += mesh->position.y;
-    transformedFace.v2.z += mesh->position.z;
+    transformedFace.v2.x += position->x;
+    transformedFace.v2.y += position->y;
+    transformedFace.v2.z += position->z;
 
     transformedFace.v3 = kcr_vec3_rotate_x(&transformedFace.v3, rotation->x);
     transformedFace.v3 = kcr_vec3_rotate_y(&transformedFace.v3, rotation->y);
     transformedFace.v3 = kcr_vec3_rotate_z(&transformedFace.v3, rotation->z);
-    transformedFace.v3.x += mesh->position.x;
-    transformedFace.v3.y += mesh->position.y;
-    transformedFace.v3.z += mesh->position.z;
+    transformedFace.v3.x += position->x;
+    transformedFace.v3.y += position->y;
+    transformedFace.v3.z += position->z;
 
     return transformedFace;
 }
@@ -129,20 +134,31 @@ void render_face(const struct KCR_Display* display, const struct KCR_Scene* scen
 }
 
 void kcr_render(const struct KCR_Display *display, const struct KCR_Scene *scene) {
-    for (size_t idx = 0; idx < kcr_list_length(scene->mesh->faceList); idx++) {
-        const struct KCR_Face* face = &scene->mesh->faceList[idx];
-        const struct TransformedFace transformedFace = transformFace(face, scene->mesh, &scene->mesh->rotation);
+    assert(scene != NULL);
+    assert(scene->instanceList != NULL);
+    assert(scene->meshList != NULL);
 
-        const struct KCR_Vec3 v1 = kcr_vec3_sub(&transformedFace.v2, &transformedFace.v1);
-        const struct KCR_Vec3 v2 = kcr_vec3_sub(&transformedFace.v3, &transformedFace.v1);
-        const struct KCR_Vec3 normal = kcr_vec3_cross(&v1, &v2);
-        const struct KCR_Vec3 vertexToCameraVector = kcr_vec3_sub(&transformedFace.v1, &scene->cameraPosition);
-        const float alignment = kcr_vec3_dot(&normal, &vertexToCameraVector);
+    for (size_t i = 0; i < kcr_list_length(scene->instanceList); i++) {
+        struct KCR_MeshInstance* instance = &scene->instanceList[i];
 
-        if (alignment > 0) {
-            // Since the normal is pointing in generally the same direction as the vector of the face to the camera
-            // then the face is facing towards the camera, and we need to cull.
-            render_face(display, scene, &transformedFace);
+        for (size_t f = 0; f < kcr_list_length(instance->mesh->faceList); f++) {
+            const struct KCR_Face* face = &instance->mesh->faceList[f];
+            const struct TransformedFace transformedFace = transformFace(face,
+                    instance->mesh,
+                    &instance->rotation,
+                    &instance->position);
+
+            const struct KCR_Vec3 v1 = kcr_vec3_sub(&transformedFace.v2, &transformedFace.v1);
+            const struct KCR_Vec3 v2 = kcr_vec3_sub(&transformedFace.v3, &transformedFace.v1);
+            const struct KCR_Vec3 normal = kcr_vec3_cross(&v1, &v2);
+            const struct KCR_Vec3 vertexToCameraVector = kcr_vec3_sub(&transformedFace.v1, &scene->cameraPosition);
+            const float alignment = kcr_vec3_dot(&normal, &vertexToCameraVector);
+
+            if (alignment > 0) {
+                // Since the normal is pointing in generally the same direction as the vector of the face to the camera
+                // then the face is facing towards the camera, and we need to cull.
+                render_face(display, scene, &transformedFace);
+            }
         }
     }
 }

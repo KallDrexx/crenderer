@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 #include "mesh.h"
 #include "../list.h"
 
@@ -84,13 +85,9 @@ struct KCR_Mesh* kcr_mesh_from_obj_file(char* filename) {
             line++;
     }
 
-    struct KCR_Vec3 rotation = {0,0,0};
-    struct KCR_Vec3 position = {0, 0, 0};
     struct KCR_Mesh* mesh = malloc(sizeof(struct KCR_Mesh));
     mesh->vertexList = vertexList;
     mesh->faceList = faceList;
-    mesh->rotation = rotation;
-    mesh->position = position;
 
     fclose(file);
 
@@ -104,4 +101,17 @@ void kcr_mesh_free(struct KCR_Mesh *mesh) {
     }
 
     free(mesh);
+}
+
+struct KCR_MeshInstance* kcr_mesh_instance_create(struct KCR_Mesh *mesh) {
+    assert(mesh != NULL);
+
+    struct KCR_MeshInstance* instance = calloc(1, sizeof(struct KCR_MeshInstance));
+    instance->mesh = mesh;
+
+    return instance;
+}
+
+void kcr_mesh_instance_free(struct KCR_MeshInstance* instance) {
+    free(instance);
 }
