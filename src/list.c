@@ -21,10 +21,12 @@ void* kcr_list_create(size_t itemSize) {
     return list->data;
 }
 
-bool kcr_list_append(void **list, void* item) {
+void* kcr_list_new_item(void **list) {
     assert(list != NULL);
     assert(*list != NULL);
 
+    // Since *list points to the address of the first element, we have to look at the bytes prior to that
+    // address to get the underlying list structure
     struct List* realList = (struct List*) ((*list) - sizeof(struct List));
 
     size_t capacity = realList->capacity;
@@ -37,20 +39,22 @@ bool kcr_list_append(void **list, void* item) {
 
         struct List* newList = realloc(realList, sizeof(struct List) + realList->itemSize * newCapacity);
         if (newList == NULL) {
-            return false;
+            return NULL;
         }
 
         realList = newList;
         realList->capacity = newCapacity;
+
+        // Since realloc may have moved the data to accommodate the new size, make sure the consumer's pointer
+        // is updated.
+        *list = (char*) realList->data;
     }
 
     char* slot = (char*) realList + (sizeof(struct List) + realList->itemSize * count);
-    memcpy(slot, item, realList->itemSize);
+    memset(slot, 0, realList->itemSize);
     realList->length++;
 
-    *list = (char*) realList->data;
-
-    return true;
+    return slot;
 }
 
 size_t kcr_list_length(const void *list) {

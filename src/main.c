@@ -1,10 +1,10 @@
+#include <stdlib.h>
 #include <stdbool.h>
 #include <SDL2/SDL.h>
 #include "gfx/display.h"
 #include "input.h"
 #include "scene/scene.h"
 #include "gfx/renderer.h"
-#include "list.h"
 
 #define FPS 30
 #define FRAME_TARGET_TIME (1000/FPS)
@@ -15,13 +15,15 @@ struct KCR_Display* display;
 struct KCR_Scene* scene;
 
 bool setup(void) {
-    display = kcr_display_create();
-    if (display == NULL) {
+    display = malloc(sizeof(struct KCR_Display));
+    bool displayInitialized = kcr_display_init(display);
+    if (displayInitialized == false) {
         return false;
     }
 
-    scene = kcr_scene_create();
-    if (scene == NULL) {
+    scene = malloc(sizeof(struct KCR_Scene));
+    bool sceneInitSuccess = kcr_scene_init(scene);
+    if (sceneInitSuccess == false) {
         return false;
     }
 
@@ -64,8 +66,8 @@ int main(__attribute__((unused)) int argc, __attribute__((unused))char *argv[]) 
         render();
     }
 
-    kcr_scene_free(scene);
-    kcr_display_free(display);
+    kcr_scene_uninit(scene);
+    kcr_display_uninit(display);
 
     return 0;
 }

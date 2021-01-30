@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <assert.h>
 #include <SDL2/SDL.h>
 #include "display.h"
 
@@ -8,13 +9,14 @@ struct KCR_Display_Internal {
     SDL_Renderer* renderer;
 };
 
-struct KCR_Display* kcr_display_create(void) {
+bool kcr_display_init(struct KCR_Display* display) {
+    assert(display != NULL);
+
     if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
         fprintf(stderr, "Error initializing SDL: %s.\n", SDL_GetError());
-        return NULL;
+        return false;
     }
 
-    struct KCR_Display* display = malloc(sizeof (struct KCR_Display));
     display->internal = malloc(sizeof(struct KCR_Display_Internal));;
 
     SDL_DisplayMode display_mode;
@@ -34,25 +36,25 @@ struct KCR_Display* kcr_display_create(void) {
 
     if (!display->internal->window) {
         fprintf(stderr, "Error creating window: %s\n", SDL_GetError());
-        kcr_display_free(display);
+        kcr_display_uninit(display);
 
-        return NULL;
+        return false;
     }
 
     display->internal->renderer = SDL_CreateRenderer(display->internal->window, -1, 0);
     if (!display->internal->renderer) {
         fprintf(stderr, "Error creating renderer: %s\n", SDL_GetError());
-        kcr_display_free(display);
+        kcr_display_uninit(display);
 
-        return NULL;
+        return false;
     }
 
     display->pixelBuffer = malloc(sizeof(uint32_t) * display->windowHeight * display->windowWidth);
     if (display->pixelBuffer == NULL) {
         fprintf(stderr, "Error allocating pixel buffer\n");
-        kcr_display_free(display);
+        kcr_display_uninit(display);
 
-        return NULL;
+        return false;
     }
 
     display->internal->texture = SDL_CreateTexture(
@@ -64,27 +66,27 @@ struct KCR_Display* kcr_display_create(void) {
 
     if (display->internal->texture == NULL) {
         fprintf(stderr, "Failed to create texture: %s\n", SDL_GetError());
-        kcr_display_free(display);
+        kcr_display_uninit(display);
 
-        return NULL;
+        return false;
     }
 
     return display;
 }
 
-void kcr_display_free(struct KCR_Display* display) {
+void kcr_display_uninit(struct KCR_Display* display) {
     if (display != NULL) {
         if (display->internal != NULL) {
             // SDL_DestroyRenderer destroys associated textures, so we shouldn't do that ourselves
             SDL_DestroyRenderer(display->internal->renderer);
             SDL_DestroyWindow(display->internal->window);
             free(display->internal);
+            display->internal = NULL;
         }
 
         free(display->pixelBuffer);
+        display->pixelBuffer = NULL;
     }
-
-    free(display);
 }
 
 void kcr_display_begin_frame(struct KCR_Display* display) {

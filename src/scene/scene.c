@@ -1,44 +1,47 @@
-#include <malloc.h>
 #include <assert.h>
 #include "scene.h"
 #include "../list.h"
 
 size_t meshIndex = 0;
 
-struct KCR_Scene* kcr_scene_create(void) {
-    struct KCR_Scene* scene = malloc(sizeof(struct KCR_Scene));
+bool kcr_scene_init(struct KCR_Scene* scene) {
+    assert(scene != NULL);
 
     scene->cameraPosition.x = 0;
     scene->cameraPosition.y = 0;
     scene->cameraPosition.z = 0;
 
-    struct KCR_Mesh* teapot = kcr_mesh_from_obj_file("assets/teapot.obj");
-    struct KCR_Mesh* cube = kcr_mesh_from_obj_file("assets/cube.obj");
-    struct KCR_Mesh* f22 = kcr_mesh_from_obj_file("assets/f22.obj");
-
-    assert(teapot != NULL);
-    assert(cube != NULL);
-    assert(f22 != NULL);
-
     scene->meshList = kcr_list_create(sizeof(struct KCR_Mesh));
     assert(scene->meshList != NULL);
 
-    kcr_list_append((void**) &scene->meshList, teapot);
-    kcr_list_append((void**) &scene->meshList, cube);
-    kcr_list_append((void**) &scene->meshList, f22);
+    struct KCR_Mesh* teapot = (struct KCR_Mesh*) kcr_list_new_item((void**) &scene->meshList);
+    struct KCR_Mesh* cube = kcr_list_new_item((void**) &scene->meshList);
+    struct KCR_Mesh* f22 = kcr_list_new_item((void**) &scene->meshList);
     assert(kcr_list_length(scene->meshList) == 3);
+
+    if (kcr_mesh_from_obj_file(teapot, "assets/teapot.obj") == false) {
+        return false;
+    }
+
+    if (kcr_mesh_from_obj_file(cube, "assets/cube.obj") == false) {
+        return false;
+    }
+
+    if (kcr_mesh_from_obj_file(f22, "assets/f22.obj") == false) {
+        return false;
+    }
 
     scene->instanceList = kcr_list_create(sizeof(struct KCR_MeshInstance));
     assert(scene->instanceList != NULL);
 
     for (int x = -1; x <= 1; x++) {
         for (int y = -1; y <= 1; y++) {
-            struct KCR_MeshInstance* instance = kcr_mesh_instance_create(teapot);
+            struct KCR_MeshInstance* instance = kcr_list_new_item((void**) &scene->instanceList);
+            kcr_mesh_instance_init(instance, teapot);
+
             instance->position.x = (float) x * 20;
             instance->position.y = (float) y * 20;
             instance->position.z = -100;
-
-            kcr_list_append((void**) &scene->instanceList, instance);
         }
     }
 
@@ -86,23 +89,22 @@ void kcr_scene_update(struct KCR_Scene* scene, const struct KCR_InputState* inpu
     }
 }
 
-void kcr_scene_free(struct KCR_Scene *scene) {
+void kcr_scene_uninit(struct KCR_Scene *scene) {
     if (scene != NULL) {
         if (scene->instanceList != NULL) {
             for (size_t x = 0; x < kcr_list_length(scene->instanceList); x++) {
-                struct KCR_MeshInstance* instance = &scene->instanceList[x];
-                kcr_mesh_instance_free(instance);
+                kcr_mesh_instance_uninit(&scene->instanceList[x]);
             }
 
             for (size_t x = 0; x < kcr_list_length(scene->meshList); x++) {
-                struct KCR_Mesh* mesh = &scene->meshList[x];
-                kcr_mesh_free(mesh);
+                kcr_mesh_uninit(&scene->meshList[x]);
             }
 
             kcr_list_free(scene->instanceList);
             kcr_list_free(scene->meshList);
+
+            scene->instanceList = NULL;
+            scene->meshList = NULL;
         }
     }
-
-    free(scene);
 }

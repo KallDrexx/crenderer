@@ -5,13 +5,15 @@
 #include "mesh.h"
 #include "../list.h"
 
-struct KCR_Mesh* kcr_mesh_from_obj_file(char* filename) {
+bool kcr_mesh_from_obj_file(struct KCR_Mesh* mesh, char* filename) {
     #define BUFFER_SIZE 1000
+
+    assert(mesh != NULL);
 
     FILE* file = fopen(filename, "r");
     if (file == NULL) {
         fprintf(stderr, "Failed to load file '%s': %s\n", filename, strerror(errno));
-        return NULL;
+        return false;
     }
 
     struct KCR_Vec3* vertexList = kcr_list_create(sizeof(struct KCR_Vec3));
@@ -37,8 +39,10 @@ struct KCR_Mesh* kcr_mesh_from_obj_file(char* filename) {
                     start = end;
                 }
 
-                struct KCR_Vec3 vertex = {values[0], values[1], values[2]};
-                kcr_list_append((void**) &vertexList, &vertex);
+                struct KCR_Vec3* vertex = kcr_list_new_item((void**) &vertexList);
+                vertex->x = values[0];
+                vertex->y = values[1];
+                vertex->z = values[2];\
             }
 
             else if (strncmp(buffer, "f ", 2) == 0) {
@@ -66,9 +70,14 @@ struct KCR_Mesh* kcr_mesh_from_obj_file(char* filename) {
                         int v2 = indices[(firstIndex + 1) % 3];
                         int v3 = indices[(firstIndex + 2) % 3];
 
-                        // obj has them listed in CCW, right now our engine uses cw
-                        struct KCR_Face face = {v3 - 1, v2 - 1, v1 - 1};
-                        kcr_list_append((void**) &faceList, &face);
+                        struct KCR_Face* face = kcr_list_new_item((void**) &faceList);
+
+                        // OBJ files lists them listed in CCW, but right now our engine uses cw.  OBJ files also
+                        // use 1 based indexing, but we obviously use zero based indexing
+                        face->vertexIndex1 = v3 - 1;
+                        face->vertexIndex2 = v2 - 1;
+                        face->vertexIndex3 = v1 - 1;
+
                         firstIndex++;
                     }
 
@@ -85,33 +94,34 @@ struct KCR_Mesh* kcr_mesh_from_obj_file(char* filename) {
             line++;
     }
 
-    struct KCR_Mesh* mesh = malloc(sizeof(struct KCR_Mesh));
     mesh->vertexList = vertexList;
     mesh->faceList = faceList;
 
     fclose(file);
 
-    return mesh;
+    return true;
 }
 
-void kcr_mesh_free(struct KCR_Mesh *mesh) {
+void kcr_mesh_uninit(struct KCR_Mesh *mesh) {
     if (mesh != NULL) {
         kcr_list_free(mesh->faceList);
         kcr_list_free(mesh->vertexList);
-    }
 
-    free(mesh);
+        mesh->faceList = NULL;
+        mesh->vertexList = NULL;
+    }
 }
 
-struct KCR_MeshInstance* kcr_mesh_instance_create(struct KCR_Mesh *mesh) {
+bool kcr_mesh_instance_init(struct KCR_MeshInstance* instance, struct KCR_Mesh *mesh) {
+    assert(instance != NULL);
     assert(mesh != NULL);
 
-    struct KCR_MeshInstance* instance = calloc(1, sizeof(struct KCR_MeshInstance));
     instance->mesh = mesh;
+    instance->position = (struct KCR_Vec3) {0};
+    instance->rotation = (struct KCR_Vec3) {0};
 
-    return instance;
+    return true;
 }
 
-void kcr_mesh_instance_free(struct KCR_MeshInstance* instance) {
-    free(instance);
+__attribute__((unused)) void kcr_mesh_instance_uninit(__attribute__((unused)) struct KCR_MeshInstance* instance) {
 }

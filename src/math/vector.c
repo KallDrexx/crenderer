@@ -91,7 +91,7 @@ struct KCR_Vec3 kcr_vec3_rotate_z(const struct KCR_Vec3 *vector, float angle) {
     return result;
 }
 
-struct KCR_Vec3 kcr_vec3_to_unit(const struct KCR_Vec3 *vector) {
+struct KCR_Vec3 kcr_vec3_normalize(const struct KCR_Vec3 *vector) {
     struct KCR_Vec3 result = kcr_vec3_div(vector, kcr_vec3_length(vector));
     return result;
 }
