@@ -34,18 +34,14 @@ bool kcr_scene_init(struct KCR_Scene* scene) {
     scene->instanceList = kcr_list_create(sizeof(struct KCR_MeshInstance));
     assert(scene->instanceList != NULL);
 
-    for (int x = -1; x <= 1; x++) {
-        for (int y = -1; y <= 1; y++) {
-            struct KCR_MeshInstance* instance = kcr_list_new_item((void**) &scene->instanceList);
-            kcr_mesh_instance_init(instance, teapot);
+    struct KCR_MeshInstance* instance = kcr_list_new_item((void**) &scene->instanceList);
+    kcr_mesh_instance_init(instance, teapot);
 
-            instance->position.x = (float) x * 20;
-            instance->position.y = (float) y * 20;
-            instance->position.z = -100;
-        }
-    }
+    instance->position.x = 0;
+    instance->position.y = 0;
+    instance->position.z = -100;
 
-    return scene;
+    return true;
 }
 
 void kcr_scene_update(struct KCR_Scene* scene, const struct KCR_InputState* inputState, float timeDelta) {

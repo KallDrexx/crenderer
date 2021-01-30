@@ -43,6 +43,8 @@ void kcr_display_finish_frame(struct KCR_Display* display);
 /*
  * Helper method to get the index on the pixel buffer for the specified x and y coordinate
  */
-int kcr_display_get_pixel_index(const struct KCR_Display* display, int x, int y);
+static inline int kcr_display_get_pixel_index(const struct KCR_Display* display, int x, int y) {
+    return y * display->windowWidth + x;
+}
 
 #endif //CRENDERER_DISPLAY_H

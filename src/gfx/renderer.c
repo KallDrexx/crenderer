@@ -1,7 +1,6 @@
 #include <math.h>
 #include <assert.h>
 #include "renderer.h"
-#include "display.h"
 #include "../list.h"
 
 struct TransformedFace {
