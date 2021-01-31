@@ -2,7 +2,7 @@
 #include "scene.h"
 #include "../list.h"
 
-size_t meshIndex = 0;
+size_t meshIndex = 1;
 
 bool kcr_scene_init(struct KCR_Scene* scene) {
     assert(scene != NULL);
@@ -35,7 +35,7 @@ bool kcr_scene_init(struct KCR_Scene* scene) {
     assert(scene->instanceList != NULL);
 
     struct KCR_MeshInstance* instance = kcr_list_new_item((void**) &scene->instanceList);
-    kcr_mesh_instance_init(instance, teapot);
+    kcr_mesh_instance_init(instance, &scene->meshList[meshIndex % kcr_list_length(scene->meshList)]);
 
     instance->position.x = 0;
     instance->position.y = 0;

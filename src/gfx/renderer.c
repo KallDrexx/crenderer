@@ -3,6 +3,8 @@
 #include "renderer.h"
 #include "../list.h"
 
+#define SWAP(FIRST, SECOND, TYPE) do {TYPE SWAP = FIRST; FIRST = SECOND; SECOND = SWAP;} while(0)
+
 struct TransformedFace {
     struct KCR_Vec3 v1;
     struct KCR_Vec3 v2;
@@ -24,7 +26,7 @@ void draw_rect(const struct KCR_Display* display, int x, int y, int width, int h
     }
 }
 
-void draw_line(const struct KCR_Display *display, int x1, int y1, int x2, int y2, uint32_t color) {
+void draw_line(const struct KCR_Display* display, int x1, int y1, int x2, int y2, uint32_t color) {
     const int changeInY = y2 - y1;
     const int changeInX = x2 - x1;
     const int numberOfPoints = abs(changeInY) > abs(changeInX) ? abs(changeInY) : abs(changeInX);
@@ -38,6 +40,82 @@ void draw_line(const struct KCR_Display *display, int x1, int y1, int x2, int y2
         currentX += xIncrement;
         currentY += yIncrement;
     }
+}
+
+void draw_filled_triangle(const struct KCR_Display* display, const struct KCR_Vec2 vertices[3], uint32_t color) {
+    // Get top to bottom indexes
+    int topIndex = 0,
+        midIndex = 1,
+        bottomIndex = 2;
+
+    if (vertices[topIndex].y < vertices[midIndex].y) SWAP(topIndex, midIndex, int);
+    if (vertices[midIndex].y < vertices[bottomIndex].y) SWAP(midIndex, bottomIndex, int);
+    if (vertices[topIndex].y < vertices[midIndex].y) SWAP(topIndex, midIndex, int);
+
+    // left and right sorting of the non-top index.  We don't care about the sorting of the top
+    int leftIndex = midIndex,
+        rightIndex = bottomIndex;
+
+    if (vertices[leftIndex].x > vertices[rightIndex].x) SWAP(leftIndex, rightIndex, int);
+    
+    // We now have 2 lines to consider, the top->mid and top->bottom points.  We can use these as bounds for each
+    // scan line we want to fill, using the slopes of each to know the left and right boundaries we want to fill.
+    // Once we hit the midpoint we want to change top->mid to mid->bottom.
+    float leftChangeInX = vertices[leftIndex].x - vertices[topIndex].x;
+    float leftChangeInY = vertices[leftIndex].y - vertices[topIndex].y;
+    float rightChangeInX = vertices[rightIndex].x - vertices[topIndex].x;
+    float rightChangeInY = vertices[rightIndex].y - vertices[topIndex].y;
+    
+    int currentY = (int) vertices[topIndex].y;
+    while (currentY >= (int) vertices[bottomIndex].y) {
+        if (currentY == (int) vertices[midIndex].y) {
+            // We hit the mid point.  Now we need to change the top->mid to mid->bottom
+            if (leftIndex == midIndex) {
+                leftChangeInX = vertices[bottomIndex].x - vertices[midIndex].x;
+                leftChangeInY = vertices[bottomIndex].y - vertices[midIndex].y;
+                leftIndex = bottomIndex;
+            } else {
+                rightChangeInX = vertices[bottomIndex].x - vertices[midIndex].x;
+                rightChangeInY = vertices[bottomIndex].y - vertices[midIndex].y;
+                rightIndex = bottomIndex;
+            }
+        }
+        
+        if (leftChangeInY == 0) {
+            // Since Y never changes, then both left and right are on the same Y coordinate, so we are at the 
+            // final boundary.  This is because the while loop + if statement together means this should never
+            // be the case for the non-last set of vertices
+            break;
+        }
+        
+        int leftX, rightX;
+        if (leftChangeInX == 0) {
+            // Vertical line, bypass y=mx+b equation due to division by zero
+            leftX = (int) vertices[leftIndex].x;
+        } else {
+            // Sloped line
+            float b = vertices[leftIndex].y - (leftChangeInY / leftChangeInX) * vertices[leftIndex].x;
+            leftX = (int) (((float) currentY - b) / (leftChangeInY / leftChangeInX));
+        }
+        
+        if (rightChangeInX == 0) {
+            // Vertical line on the right side
+            rightX = (int) vertices[rightIndex].x;
+        } else {
+            // sloped line
+            float b = vertices[rightIndex].y - (rightChangeInY / rightChangeInX) * vertices[rightIndex].x;
+            rightX = (int) (((float) currentY - b) / (rightChangeInY / rightChangeInX));
+        }
+
+        if (leftX > rightX) SWAP(leftX, rightX, int);
+        
+        for (int x = leftX; x <= rightX; x++) {
+            draw_pixel(display, x, currentY, color);
+        }
+        
+        currentY--;
+    }
+    
 }
 
 struct KCR_Vec2 perform_projection(const struct KCR_Scene* scene, const struct KCR_Vec3 *vector) {
@@ -125,12 +203,14 @@ void render_face(const struct KCR_Display* display, const struct KCR_Scene* scen
     adjust_to_screen_space(display, &projectedPoints[1]);
     adjust_to_screen_space(display, &projectedPoints[2]);
 
-    draw_line(display, (int) projectedPoints[0].x, (int) projectedPoints[0].y, (int) projectedPoints[1].x,
-              (int) projectedPoints[1].y, 0xFFFFFFFF);
-    draw_line(display, (int) projectedPoints[1].x, (int) projectedPoints[1].y, (int) projectedPoints[2].x,
-              (int) projectedPoints[2].y, 0xFFFFFFFF);
-    draw_line(display, (int) projectedPoints[2].x, (int) projectedPoints[2].y, (int) projectedPoints[0].x,
-              (int) projectedPoints[0].y, 0xFFFFFFFF);
+    draw_filled_triangle(display, projectedPoints, 0xFFFFFFFF);
+
+//    draw_line(display, (int) projectedPoints[0].x, (int) projectedPoints[0].y, (int) projectedPoints[1].x,
+//              (int) projectedPoints[1].y, 0xFFFFFFFF);
+//    draw_line(display, (int) projectedPoints[1].x, (int) projectedPoints[1].y, (int) projectedPoints[2].x,
+//              (int) projectedPoints[2].y, 0xFFFFFFFF);
+//    draw_line(display, (int) projectedPoints[2].x, (int) projectedPoints[2].y, (int) projectedPoints[0].x,
+//              (int) projectedPoints[0].y, 0xFFFFFFFF);
 }
 
 void kcr_render(const struct KCR_Display *display, const struct KCR_Scene *scene) {
@@ -142,6 +222,10 @@ void kcr_render(const struct KCR_Display *display, const struct KCR_Scene *scene
         struct KCR_MeshInstance* instance = &scene->instanceList[i];
 
         for (size_t f = 0; f < kcr_list_length(instance->mesh->faceList); f++) {
+            if (f != 1) {
+//                continue;
+            }
+
             const struct KCR_Face* face = &instance->mesh->faceList[f];
             const struct TransformedFace transformedFace = transformFace(face,
                     instance->mesh,
