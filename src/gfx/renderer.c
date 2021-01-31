@@ -52,70 +52,69 @@ void draw_filled_triangle(const struct KCR_Display* display, const struct KCR_Ve
     if (vertices[midIndex].y < vertices[bottomIndex].y) SWAP(midIndex, bottomIndex, int);
     if (vertices[topIndex].y < vertices[midIndex].y) SWAP(topIndex, midIndex, int);
 
-    // left and right sorting of the non-top index.  We don't care about the sorting of the top
-    int leftIndex = midIndex,
-        rightIndex = bottomIndex;
+    // We need to track the two destination vertices we are going towards from our current point
+    int v1Index = midIndex,
+        v2Index = bottomIndex;
 
-    if (vertices[leftIndex].x > vertices[rightIndex].x) SWAP(leftIndex, rightIndex, int);
-    
-    // We now have 2 lines to consider, the top->mid and top->bottom points.  We can use these as bounds for each
-    // scan line we want to fill, using the slopes of each to know the left and right boundaries we want to fill.
-    // Once we hit the midpoint we want to change top->mid to mid->bottom.
-    float leftChangeInX = vertices[leftIndex].x - vertices[topIndex].x;
-    float leftChangeInY = vertices[leftIndex].y - vertices[topIndex].y;
-    float rightChangeInX = vertices[rightIndex].x - vertices[topIndex].x;
-    float rightChangeInY = vertices[rightIndex].y - vertices[topIndex].y;
-    
-    int currentY = (int) vertices[topIndex].y;
-    while (currentY >= (int) vertices[bottomIndex].y) {
-        if (currentY == (int) vertices[midIndex].y) {
-            // We hit the mid point.  Now we need to change the top->mid to mid->bottom
-            if (leftIndex == midIndex) {
-                leftChangeInX = vertices[bottomIndex].x - vertices[midIndex].x;
-                leftChangeInY = vertices[bottomIndex].y - vertices[midIndex].y;
-                leftIndex = bottomIndex;
+    if (vertices[v1Index].x > vertices[v2Index].x) SWAP(v1Index, v2Index, int);
+
+    float topToMidSlope = (vertices[midIndex].y - vertices[topIndex].y) / (vertices[midIndex].x - vertices[topIndex].x);
+    float topToBottomSlope = (vertices[bottomIndex].y - vertices[topIndex].y) / (vertices[bottomIndex].x - vertices[topIndex].x);
+    float midToBottomSlope = (vertices[bottomIndex].y - vertices[midIndex].y) / (vertices[bottomIndex].x - vertices[midIndex].x);
+
+    float v1Slope = v1Index == midIndex ? topToMidSlope : topToBottomSlope;
+    float v2Slope = v2Index == midIndex ? topToMidSlope : topToBottomSlope;
+    float v1YIntercept = vertices[v1Index].y - v1Slope * vertices[v1Index].x;
+    float v2YIntercept = vertices[v2Index].y - v2Slope * vertices[v2Index].x;
+
+    bool reachedMidPoint = false;
+    for (int currentY = (int) vertices[topIndex].y; currentY > (int) vertices[bottomIndex].y; currentY--)
+    {
+        // Have we reached the midpoint yet?
+        if (!reachedMidPoint && currentY <= vertices[midIndex].y) {
+            reachedMidPoint = true;
+            // Swap out top->mid slope with mid->bottom
+            if (v1Index == midIndex) {
+                v1Slope = midToBottomSlope;
+                v1YIntercept = vertices[v1Index].y - v1Slope * vertices[v1Index].x;
             } else {
-                rightChangeInX = vertices[bottomIndex].x - vertices[midIndex].x;
-                rightChangeInY = vertices[bottomIndex].y - vertices[midIndex].y;
-                rightIndex = bottomIndex;
+                v2Slope = midToBottomSlope;
+                v2YIntercept = vertices[v2Index].y - v2Slope * vertices[v2Index].x;
             }
         }
-        
-        if (leftChangeInY == 0) {
-            // Since Y never changes, then both left and right are on the same Y coordinate, so we are at the 
-            // final boundary.  This is because the while loop + if statement together means this should never
-            // be the case for the non-last set of vertices
+
+        if (v1Slope == 0 || v2Slope == 0) {
+            // Horizontal slope.  We would only hit this if the mid->bottom is horizontal.  If top->mid was horizontal
+            // then we would have instead hit the mid point immediately and swaped top->mid to mid->bottom.
             break;
         }
-        
-        int leftX, rightX;
-        if (leftChangeInX == 0) {
-            // Vertical line, bypass y=mx+b equation due to division by zero
-            leftX = (int) vertices[leftIndex].x;
-        } else {
-            // Sloped line
-            float b = vertices[leftIndex].y - (leftChangeInY / leftChangeInX) * vertices[leftIndex].x;
-            leftX = (int) (((float) currentY - b) / (leftChangeInY / leftChangeInX));
-        }
-        
-        if (rightChangeInX == 0) {
-            // Vertical line on the right side
-            rightX = (int) vertices[rightIndex].x;
-        } else {
-            // sloped line
-            float b = vertices[rightIndex].y - (rightChangeInY / rightChangeInX) * vertices[rightIndex].x;
-            rightX = (int) (((float) currentY - b) / (rightChangeInY / rightChangeInX));
+
+        if (currentY < 0 || currentY > display->windowWidth) {
+            // off screen
+            continue;
         }
 
-        if (leftX > rightX) SWAP(leftX, rightX, int);
-        
-        for (int x = leftX; x <= rightX; x++) {
+        float leftX, rightX;
+        if (isinf(v1Slope)) {
+            // vertical line
+            leftX = vertices[v1Index].x;
+        } else {
+            leftX = (currentY - v1YIntercept) / v1Slope;
+        }
+
+        if (isinf(v2Slope)) {
+            // vertical line
+            rightX = vertices[v2Index].x;
+        } else {
+            rightX = (currentY - v2YIntercept) / v2Slope;
+        }
+
+        if (leftX > rightX) SWAP(leftX, rightX, float);
+
+        for (int x = (int) leftX; x <= (int) rightX; x++) {
             draw_pixel(display, x, currentY, color);
         }
-        
-        currentY--;
     }
-    
 }
 
 struct KCR_Vec2 perform_projection(const struct KCR_Scene* scene, const struct KCR_Vec3 *vector) {
@@ -222,7 +221,7 @@ void kcr_render(const struct KCR_Display *display, const struct KCR_Scene *scene
         struct KCR_MeshInstance* instance = &scene->instanceList[i];
 
         for (size_t f = 0; f < kcr_list_length(instance->mesh->faceList); f++) {
-            if (f != 1) {
+            if (f != 0) {
 //                continue;
             }
 
