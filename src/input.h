@@ -18,6 +18,7 @@ struct KCR_InputState {
     bool equals_down;
     bool f1_pressed;
     bool f2_pressed;
+    bool space_pressed;
 };
 
 void kcr_input_update_state(struct KCR_InputState* state);

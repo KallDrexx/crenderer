@@ -1,12 +1,34 @@
 #ifndef CRENDERER_RENDERER_H
 #define CRENDERER_RENDERER_H
 
+#include <stdbool.h>
 #include "display.h"
 #include "../scene/scene.h"
+#include "../input.h"
 
 /*
- * Rasterize the scene onto the display
+ * Represents the state of the renderer
  */
-void kcr_render(const struct KCR_Display* display, const struct KCR_Scene* scene);
+struct KCR_Renderer {
+    const struct KCR_Display* display;
+    bool showWireframe;
+};
+
+/*
+ * Initializes a new renderer
+ */
+bool kcr_renderer_init(struct KCR_Renderer* renderer, const struct KCR_Display* display);
+
+/*
+ * Uninitializes a renderer and releases memory it has allocated.  The renderer itself will not be freed
+ */
+void kcr_renderer_uninit(struct KCR_Renderer* renderer);
+
+/*
+ * Renders the current scene using the passed in initialized renderer
+ */
+void kcr_renderer_render(struct KCR_Renderer* renderer,
+        const struct KCR_Scene* scene,
+        const struct KCR_InputState* inputState);
 
 #endif //CRENDERER_RENDERER_H

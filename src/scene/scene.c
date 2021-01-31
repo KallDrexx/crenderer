@@ -45,8 +45,8 @@ bool kcr_scene_init(struct KCR_Scene* scene) {
 }
 
 void kcr_scene_update(struct KCR_Scene* scene, const struct KCR_InputState* inputState, float timeDelta) {
-    #define KEYBOARD_ROTATION_SPEED 0.5f
-    #define MOUSE_ROTATION_SPEED 0.005f
+    #define KEYBOARD_ROTATION_SPEED 1.0f
+    #define MOUSE_ROTATION_SPEED 0.01f
     #define ZOOM_SPEED 50.0f
 
     bool meshChanged = false;

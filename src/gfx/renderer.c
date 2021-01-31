@@ -191,7 +191,10 @@ struct TransformedFace transformFace(const struct KCR_Face* face,
     return transformedFace;
 }
 
-void render_face(const struct KCR_Display* display, const struct KCR_Scene* scene, const struct TransformedFace* face) {
+void render_face(const struct KCR_Display* display,
+                 const struct KCR_Scene* scene,
+                 const struct TransformedFace* face,
+                 bool showWireframe) {
     struct KCR_Vec2 projectedPoints[] = {
             perform_projection(scene, &face->v1),
             perform_projection(scene, &face->v2),
@@ -202,34 +205,57 @@ void render_face(const struct KCR_Display* display, const struct KCR_Scene* scen
     adjust_to_screen_space(display, &projectedPoints[1]);
     adjust_to_screen_space(display, &projectedPoints[2]);
 
-    draw_filled_triangle(display, projectedPoints, 0xFFFFFFFF);
-
-//    draw_line(display, (int) projectedPoints[0].x, (int) projectedPoints[0].y, (int) projectedPoints[1].x,
-//              (int) projectedPoints[1].y, 0xFFFFFFFF);
-//    draw_line(display, (int) projectedPoints[1].x, (int) projectedPoints[1].y, (int) projectedPoints[2].x,
-//              (int) projectedPoints[2].y, 0xFFFFFFFF);
-//    draw_line(display, (int) projectedPoints[2].x, (int) projectedPoints[2].y, (int) projectedPoints[0].x,
-//              (int) projectedPoints[0].y, 0xFFFFFFFF);
+    if (showWireframe)
+    {
+        draw_line(display, (int) projectedPoints[0].x, (int) projectedPoints[0].y, (int) projectedPoints[1].x, (int) projectedPoints[1].y, 0xFFFFFFFF);
+        draw_line(display, (int) projectedPoints[1].x, (int) projectedPoints[1].y, (int) projectedPoints[2].x, (int) projectedPoints[2].y, 0xFFFFFFFF);
+        draw_line(display, (int) projectedPoints[2].x, (int) projectedPoints[2].y, (int) projectedPoints[0].x, (int) projectedPoints[0].y, 0xFFFFFFFF);
+    }
+    else
+    {
+        draw_filled_triangle(display, projectedPoints, 0xFFFFFFFF);
+    }
 }
 
-void kcr_render(const struct KCR_Display *display, const struct KCR_Scene *scene) {
+bool kcr_renderer_init(struct KCR_Renderer *renderer, const struct KCR_Display *display) {
+    assert(renderer != NULL);
+    assert(display != NULL);
+
+    renderer->display = display;
+    renderer->showWireframe = false;
+
+    return true;
+}
+
+void kcr_renderer_uninit(struct KCR_Renderer *renderer) {
+    if (renderer != NULL) {
+        renderer->display = NULL;
+    }
+}
+
+void kcr_renderer_render(struct KCR_Renderer *renderer,
+                         const struct KCR_Scene *scene,
+                         const struct KCR_InputState *inputState) {
+    assert(renderer != NULL);
+    assert(renderer->display != NULL);
     assert(scene != NULL);
     assert(scene->instanceList != NULL);
     assert(scene->meshList != NULL);
+    assert(inputState != NULL);
+
+    if (inputState->space_pressed) {
+        renderer->showWireframe = !renderer->showWireframe;
+    }
 
     for (size_t i = 0; i < kcr_list_length(scene->instanceList); i++) {
         struct KCR_MeshInstance* instance = &scene->instanceList[i];
 
         for (size_t f = 0; f < kcr_list_length(instance->mesh->faceList); f++) {
-            if (f != 0) {
-//                continue;
-            }
-
             const struct KCR_Face* face = &instance->mesh->faceList[f];
             const struct TransformedFace transformedFace = transformFace(face,
-                    instance->mesh,
-                    &instance->rotation,
-                    &instance->position);
+                                                                         instance->mesh,
+                                                                         &instance->rotation,
+                                                                         &instance->position);
 
             const struct KCR_Vec3 v1 = kcr_vec3_sub(&transformedFace.v2, &transformedFace.v1);
             const struct KCR_Vec3 v2 = kcr_vec3_sub(&transformedFace.v3, &transformedFace.v1);
@@ -240,7 +266,7 @@ void kcr_render(const struct KCR_Display *display, const struct KCR_Scene *scene
             if (alignment > 0) {
                 // Since the normal is pointing in generally the same direction as the vector of the face to the camera
                 // then the face is facing towards the camera, and we need to cull.
-                render_face(display, scene, &transformedFace);
+                render_face(renderer->display, scene, &transformedFace, renderer->showWireframe);
             }
         }
     }

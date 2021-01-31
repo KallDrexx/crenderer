@@ -1,4 +1,4 @@
-#include <stdlib.h>
+#include <stdio.h>
 #include <stdbool.h>
 #include <SDL2/SDL.h>
 #include "gfx/display.h"
@@ -11,19 +11,23 @@
 
 bool isRunning;
 struct KCR_InputState inputState;
-struct KCR_Display* display;
-struct KCR_Scene* scene;
+struct KCR_Display display;
+struct KCR_Scene scene;
+struct KCR_Renderer renderer;
 
 bool setup(void) {
-    display = malloc(sizeof(struct KCR_Display));
-    bool displayInitialized = kcr_display_init(display);
-    if (displayInitialized == false) {
+    if (kcr_display_init(&display) == false) {
+        fprintf(stderr, "Failed to initialize display\n");
         return false;
     }
 
-    scene = malloc(sizeof(struct KCR_Scene));
-    bool sceneInitSuccess = kcr_scene_init(scene);
-    if (sceneInitSuccess == false) {
+    if (kcr_scene_init(&scene) == false) {
+        fprintf(stderr, "Failed to initialize scene\n");
+        return false;
+    }
+
+    if (kcr_renderer_init(&renderer, &display) == false) {
+        fprintf(stderr, "Failed to initialize renderer\n");
         return false;
     }
 
@@ -39,13 +43,13 @@ void process_input(void) {
 }
 
 void update(float timeDelta) {
-    kcr_scene_update(scene, &inputState, timeDelta);
+    kcr_scene_update(&scene, &inputState, timeDelta);
 }
 
 void render(void) {
-    kcr_display_begin_frame(display);
-    kcr_render(display, scene);
-    kcr_display_finish_frame(display);
+    kcr_display_begin_frame(&display);
+    kcr_renderer_render(&renderer, &scene, &inputState);
+    kcr_display_finish_frame(&display);
 }
 
 int main(__attribute__((unused)) int argc, __attribute__((unused))char *argv[]) {
@@ -66,8 +70,9 @@ int main(__attribute__((unused)) int argc, __attribute__((unused))char *argv[]) 
         render();
     }
 
-    kcr_scene_uninit(scene);
-    kcr_display_uninit(display);
+    kcr_scene_uninit(&scene);
+    kcr_display_uninit(&display);
+    kcr_renderer_uninit(&renderer);
 
     return 0;
 }

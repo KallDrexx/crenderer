@@ -46,6 +46,10 @@ void handle_keyup_event(struct KCR_InputState *state, SDL_Event *event) {
         case SDLK_EQUALS:
             state->equals_down = false;
             break;
+
+        case SDLK_SPACE:
+            state->space_pressed = true;
+            break;
     }
 }
 
@@ -88,6 +92,7 @@ void handle_keydown_event(struct KCR_InputState *state, SDL_Event *event) {
 void kcr_input_update_state(struct KCR_InputState* state) {
     state->f1_pressed = false;
     state->f2_pressed = false;
+    state->space_pressed = false;
     state->mouse_drag_y = 0;
     state->mouse_drag_x = 0;
 
