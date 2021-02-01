@@ -42,76 +42,79 @@ void draw_line(const struct KCR_Display* display, int x1, int y1, int x2, int y2
     }
 }
 
-void draw_filled_triangle(const struct KCR_Display* display, const struct KCR_Vec2 vertices[3], uint32_t color) {
-    // Get top to bottom indexes
+void draw_filled_triangle(const struct KCR_Display* display, const struct KCR_Vec2* vertices[3], uint32_t color) {
+    // Get top to bottom indexes using screen coordinates (topleft = 0,0, y increases as going down
     int topIndex = 0,
         midIndex = 1,
         bottomIndex = 2;
 
-    if (vertices[topIndex].y < vertices[midIndex].y) SWAP(topIndex, midIndex, int);
-    if (vertices[midIndex].y < vertices[bottomIndex].y) SWAP(midIndex, bottomIndex, int);
-    if (vertices[topIndex].y < vertices[midIndex].y) SWAP(topIndex, midIndex, int);
+    if (vertices[topIndex]->y > vertices[midIndex]->y) SWAP(topIndex, midIndex, int);
+    if (vertices[midIndex]->y > vertices[bottomIndex]->y) SWAP(midIndex, bottomIndex, int);
+    if (vertices[topIndex]->y > vertices[midIndex]->y) SWAP(topIndex, midIndex, int);
 
-    // We need to track the two destination vertices we are going towards from our current point
-    int v1Index = midIndex,
-        v2Index = bottomIndex;
+    // Determine if this triangle already has a flat bottom or a flat top.  If not we need to split it into 2 triangles
+    bool isFlatBottom = fabsf(vertices[midIndex]->y - vertices[bottomIndex]->y) < 0.0001f;
+    bool isFlatTop = fabsf(vertices[midIndex]->y - vertices[topIndex]->y) < 0.0001f;
 
-    if (vertices[v1Index].x > vertices[v2Index].x) SWAP(v1Index, v2Index, int);
-
-    float topToMidSlope = (vertices[midIndex].y - vertices[topIndex].y) / (vertices[midIndex].x - vertices[topIndex].x);
-    float topToBottomSlope = (vertices[bottomIndex].y - vertices[topIndex].y) / (vertices[bottomIndex].x - vertices[topIndex].x);
-    float midToBottomSlope = (vertices[bottomIndex].y - vertices[midIndex].y) / (vertices[bottomIndex].x - vertices[midIndex].x);
-
-    float v1Slope = v1Index == midIndex ? topToMidSlope : topToBottomSlope;
-    float v2Slope = v2Index == midIndex ? topToMidSlope : topToBottomSlope;
-    float v1YIntercept = vertices[v1Index].y - v1Slope * vertices[v1Index].x;
-    float v2YIntercept = vertices[v2Index].y - v2Slope * vertices[v2Index].x;
-
-    bool reachedMidPoint = false;
-    for (int currentY = (int) vertices[topIndex].y; currentY > (int) vertices[bottomIndex].y; currentY--)
-    {
-        // Have we reached the midpoint yet?
-        if (!reachedMidPoint && currentY <= vertices[midIndex].y) {
-            reachedMidPoint = true;
-            // Swap out top->mid slope with mid->bottom
-            if (v1Index == midIndex) {
-                v1Slope = midToBottomSlope;
-                v1YIntercept = vertices[v1Index].y - v1Slope * vertices[v1Index].x;
-            } else {
-                v2Slope = midToBottomSlope;
-                v2YIntercept = vertices[v2Index].y - v2Slope * vertices[v2Index].x;
-            }
+    if (!isFlatTop && !isFlatBottom) {
+        float topToBottomX = vertices[bottomIndex]->x - vertices[topIndex]->x;
+        float xPosition;
+        if (topToBottomX == 0) {
+            xPosition = vertices[bottomIndex]->x; // vertical line
+        } else {
+            float topToMidY = vertices[midIndex]->y - vertices[topIndex]->y;
+            float topToBottomY = vertices[bottomIndex]->y - vertices[topIndex]->y;
+            xPosition = (topToBottomX * (topToMidY / topToBottomY)) + vertices[topIndex]->x;
         }
 
-        if (v1Slope == 0 || v2Slope == 0) {
-            // Horizontal slope.  We would only hit this if the mid->bottom is horizontal.  If top->mid was horizontal
-            // then we would have instead hit the mid point immediately and swaped top->mid to mid->bottom.
-            break;
-        }
+        struct KCR_Vec2 midPoint = {xPosition, vertices[midIndex]->y};
+        const struct KCR_Vec2* flatBottomPoints[] = {vertices[topIndex], vertices[midIndex], &midPoint};
+        const struct KCR_Vec2* flatTopPoints[] = {vertices[midIndex], &midPoint, vertices[bottomIndex]};
 
-        if (currentY < 0 || currentY > display->windowWidth) {
-            // off screen
+        draw_filled_triangle(display, flatBottomPoints, color);
+        draw_filled_triangle(display, flatTopPoints, color);
+
+        return;
+    }
+
+    int soloVertexIndex = isFlatBottom ? topIndex : bottomIndex;
+    int leftIndex = midIndex,
+        rightIndex = !isFlatBottom ? topIndex : bottomIndex;
+
+    if (vertices[leftIndex]->x > vertices[rightIndex]->x) SWAP(leftIndex, rightIndex, int);
+
+    float fullHeight = fabsf(vertices[soloVertexIndex]->y - vertices[leftIndex]->y);
+    float widthToLeft = vertices[leftIndex]->x - vertices[soloVertexIndex]->x;
+    float widthToRight = vertices[rightIndex]->x - vertices[soloVertexIndex]->x;
+
+    int startY = (int) vertices[topIndex]->y + 1;
+    int endY = (int) vertices[bottomIndex]->y;
+    if (startY < 0) startY = 0;
+    if (endY > display->windowHeight) endY = display->windowHeight;
+
+    for (int currentY = startY; currentY <= endY; currentY++) {
+        float heightToY = isFlatBottom
+                ? (float) currentY - vertices[soloVertexIndex]->y
+                : vertices[soloVertexIndex]->y - (float) currentY;
+
+        float heightRatio = heightToY / fullHeight;
+
+        float leftX = widthToLeft == 0
+                ? vertices[leftIndex]->x
+                : widthToLeft * heightRatio + vertices[soloVertexIndex]->x;
+
+        float rightX = widthToRight == 0
+                ? vertices[rightIndex]->x
+                : widthToRight * heightRatio + vertices[soloVertexIndex]->x;
+
+        // ignore off screen positions
+        if (leftX >= (float) display->windowWidth || rightX <= 0) {
             continue;
         }
 
-        float leftX, rightX;
-        if (isinf(v1Slope)) {
-            // vertical line
-            leftX = vertices[v1Index].x;
-        } else {
-            leftX = (currentY - v1YIntercept) / v1Slope;
-        }
-
-        if (isinf(v2Slope)) {
-            // vertical line
-            rightX = vertices[v2Index].x;
-        } else {
-            rightX = (currentY - v2YIntercept) / v2Slope;
-        }
-
-        if (leftX > rightX) SWAP(leftX, rightX, float);
-
-        for (int x = (int) leftX; x <= (int) rightX; x++) {
+        if (leftX < 0) leftX = 0;
+        if (rightX > (float) display->windowWidth) rightX = (float) display->windowWidth;
+        for (int x = (int) leftX; x < (int) rightX; x++) {
             draw_pixel(display, x, currentY, color);
         }
     }
@@ -195,25 +198,25 @@ void render_face(const struct KCR_Display* display,
                  const struct KCR_Scene* scene,
                  const struct TransformedFace* face,
                  bool showWireframe) {
-    struct KCR_Vec2 projectedPoints[] = {
-            perform_projection(scene, &face->v1),
-            perform_projection(scene, &face->v2),
-            perform_projection(scene, &face->v3),
-    };
 
-    adjust_to_screen_space(display, &projectedPoints[0]);
-    adjust_to_screen_space(display, &projectedPoints[1]);
-    adjust_to_screen_space(display, &projectedPoints[2]);
+    struct KCR_Vec2 projectedPoint1 = perform_projection(scene, &face->v1);
+    struct KCR_Vec2 projectedPoint2 = perform_projection(scene, &face->v2);
+    struct KCR_Vec2 projectedPoint3 = perform_projection(scene, &face->v3);
+
+    adjust_to_screen_space(display, &projectedPoint1);
+    adjust_to_screen_space(display, &projectedPoint2);
+    adjust_to_screen_space(display, &projectedPoint3);
 
     if (showWireframe)
     {
-        draw_line(display, (int) projectedPoints[0].x, (int) projectedPoints[0].y, (int) projectedPoints[1].x, (int) projectedPoints[1].y, 0xFFFFFFFF);
-        draw_line(display, (int) projectedPoints[1].x, (int) projectedPoints[1].y, (int) projectedPoints[2].x, (int) projectedPoints[2].y, 0xFFFFFFFF);
-        draw_line(display, (int) projectedPoints[2].x, (int) projectedPoints[2].y, (int) projectedPoints[0].x, (int) projectedPoints[0].y, 0xFFFFFFFF);
+        draw_line(display, (int) projectedPoint1.x, (int) projectedPoint1.y, (int) projectedPoint2.x, (int) projectedPoint2.y, 0xFFFFFFFF);
+        draw_line(display, (int) projectedPoint2.x, (int) projectedPoint2.y, (int) projectedPoint3.x, (int) projectedPoint3.y, 0xFFFFFFFF);
+        draw_line(display, (int) projectedPoint3.x, (int) projectedPoint3.y, (int) projectedPoint1.x, (int) projectedPoint1.y, 0xFFFFFFFF);
     }
     else
     {
-        draw_filled_triangle(display, projectedPoints, 0xFFFFFFFF);
+        const struct KCR_Vec2* points[] = {&projectedPoint1, &projectedPoint2, &projectedPoint3};
+        draw_filled_triangle(display, points, 0xFFFFFFFF);
     }
 }
 
@@ -251,6 +254,7 @@ void kcr_renderer_render(struct KCR_Renderer *renderer,
         struct KCR_MeshInstance* instance = &scene->instanceList[i];
 
         for (size_t f = 0; f < kcr_list_length(instance->mesh->faceList); f++) {
+//            if (f != 1) continue;
             const struct KCR_Face* face = &instance->mesh->faceList[f];
             const struct TransformedFace transformedFace = transformFace(face,
                                                                          instance->mesh,

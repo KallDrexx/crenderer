@@ -39,7 +39,7 @@ bool kcr_scene_init(struct KCR_Scene* scene) {
 
     instance->position.x = 0;
     instance->position.y = 0;
-    instance->position.z = -100;
+    instance->position.z = -10;
 
     return true;
 }
