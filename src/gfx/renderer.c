@@ -11,7 +11,7 @@ struct TransformedFace {
     struct KCR_Vec3 v3;
 };
 
-void draw_pixel(const struct KCR_Display* display, int x, int y, uint32_t color) {
+static inline void draw_pixel(const struct KCR_Display* display, int x, int y, uint32_t color) {
     if (x >= 0 && x < display->windowWidth && y >= 0 && y < display->windowHeight) {
         int index = kcr_display_get_pixel_index(display, x, y);
         display->pixelBuffer[index] = color;
@@ -52,70 +52,46 @@ void draw_filled_triangle(const struct KCR_Display* display, const struct KCR_Ve
     if (vertices[midIndex]->y > vertices[bottomIndex]->y) SWAP(midIndex, bottomIndex, int);
     if (vertices[topIndex]->y > vertices[midIndex]->y) SWAP(topIndex, midIndex, int);
 
-    // Determine if this triangle already has a flat bottom or a flat top.  If not we need to split it into 2 triangles
-    bool isFlatBottom = fabsf(vertices[midIndex]->y - vertices[bottomIndex]->y) < 0.0001f;
-    bool isFlatTop = fabsf(vertices[midIndex]->y - vertices[topIndex]->y) < 0.0001f;
+    // Consider the triangle as 2 triangles split at the middle point, so they have consistent Y start and end values.
+    // Flat bottom triangle
+    if (vertices[topIndex]->y < vertices[midIndex]->y) { // Not a horizontal line from top to mid
+        float v01InverseSlope = (float)((int)vertices[midIndex]->x - (int)vertices[topIndex]->x) / (float)((int)vertices[midIndex]->y - (int)vertices[topIndex]->y);
+        float v02InverseSlope = (float)((int)vertices[bottomIndex]->x - (int)vertices[topIndex]->x) / (float)((int)vertices[bottomIndex]->y - (int)vertices[topIndex]->y);
+        float v01CurX = vertices[topIndex]->x;
+        float v02CurX = vertices[topIndex]->x;
+        for (int y = (int) vertices[topIndex]->y; y <= (int) vertices[midIndex]->y; y++) {
+            int leftX = (int) v01CurX;
+            int rightX = (int) v02CurX;
+            if (y > 0 && y < display->windowHeight) {
+                if (leftX > rightX) SWAP(leftX, rightX, int);
+                for (int x = leftX; x <= rightX; x++) {
+                    draw_pixel(display, x, y, color);
+                }
+            }
 
-    if (!isFlatTop && !isFlatBottom) {
-        float topToBottomX = vertices[bottomIndex]->x - vertices[topIndex]->x;
-        float xPosition;
-        if (topToBottomX == 0) {
-            xPosition = vertices[bottomIndex]->x; // vertical line
-        } else {
-            float topToMidY = vertices[midIndex]->y - vertices[topIndex]->y;
-            float topToBottomY = vertices[bottomIndex]->y - vertices[topIndex]->y;
-            xPosition = (topToBottomX * (topToMidY / topToBottomY)) + vertices[topIndex]->x;
+            v01CurX += v01InverseSlope;
+            v02CurX += v02InverseSlope;
         }
-
-        struct KCR_Vec2 midPoint = {xPosition, vertices[midIndex]->y};
-        const struct KCR_Vec2* flatBottomPoints[] = {vertices[topIndex], vertices[midIndex], &midPoint};
-        const struct KCR_Vec2* flatTopPoints[] = {vertices[midIndex], &midPoint, vertices[bottomIndex]};
-
-        draw_filled_triangle(display, flatBottomPoints, color);
-        draw_filled_triangle(display, flatTopPoints, color);
-
-        return;
     }
 
-    int soloVertexIndex = isFlatBottom ? topIndex : bottomIndex;
-    int leftIndex = midIndex,
-        rightIndex = !isFlatBottom ? topIndex : bottomIndex;
+    // flat top triangle
+    if (vertices[bottomIndex]->y > vertices[midIndex]->y) { // Not a horizontal line from bottom to mid
+        float v21InverseSlope = (float)((int)vertices[midIndex]->x - (int)vertices[bottomIndex]->x) / (float)((int)vertices[midIndex]->y - (int)vertices[bottomIndex]->y);
+        float v20InverseSlope = (float)((int)vertices[topIndex]->x - (int)vertices[bottomIndex]->x) / (float)((int)vertices[topIndex]->y - (int)vertices[bottomIndex]->y);
+        float v21CurX = vertices[bottomIndex]->x;
+        float v20CurX = vertices[bottomIndex]->x;
+        for (int y = (int) vertices[bottomIndex]->y; y > (int) vertices[midIndex]->y; y--) {
+            int leftX = (int) v21CurX;
+            int rightX = (int) v20CurX;
+            if (y > 0 && y < display->windowHeight) {
+                if (leftX > rightX) SWAP(leftX, rightX, int);
+                for (int x = leftX; x <= rightX; x++) {
+                    draw_pixel(display, x, y, color);
+                }
+            }
 
-    if (vertices[leftIndex]->x > vertices[rightIndex]->x) SWAP(leftIndex, rightIndex, int);
-
-    float fullHeight = fabsf(vertices[soloVertexIndex]->y - vertices[leftIndex]->y);
-    float widthToLeft = vertices[leftIndex]->x - vertices[soloVertexIndex]->x;
-    float widthToRight = vertices[rightIndex]->x - vertices[soloVertexIndex]->x;
-
-    int startY = (int) vertices[topIndex]->y + 1;
-    int endY = (int) vertices[bottomIndex]->y;
-    if (startY < 0) startY = 0;
-    if (endY > display->windowHeight) endY = display->windowHeight;
-
-    for (int currentY = startY; currentY <= endY; currentY++) {
-        float heightToY = isFlatBottom
-                ? (float) currentY - vertices[soloVertexIndex]->y
-                : vertices[soloVertexIndex]->y - (float) currentY;
-
-        float heightRatio = heightToY / fullHeight;
-
-        float leftX = widthToLeft == 0
-                ? vertices[leftIndex]->x
-                : widthToLeft * heightRatio + vertices[soloVertexIndex]->x;
-
-        float rightX = widthToRight == 0
-                ? vertices[rightIndex]->x
-                : widthToRight * heightRatio + vertices[soloVertexIndex]->x;
-
-        // ignore off screen positions
-        if (leftX >= (float) display->windowWidth || rightX <= 0) {
-            continue;
-        }
-
-        if (leftX < 0) leftX = 0;
-        if (rightX > (float) display->windowWidth) rightX = (float) display->windowWidth;
-        for (int x = (int) leftX; x < (int) rightX; x++) {
-            draw_pixel(display, x, currentY, color);
+            v21CurX -= v21InverseSlope;
+            v20CurX -= v20InverseSlope;
         }
     }
 }
@@ -254,7 +230,7 @@ void kcr_renderer_render(struct KCR_Renderer *renderer,
         struct KCR_MeshInstance* instance = &scene->instanceList[i];
 
         for (size_t f = 0; f < kcr_list_length(instance->mesh->faceList); f++) {
-//            if (f != 1) continue;
+//            if (f != 0) continue;
             const struct KCR_Face* face = &instance->mesh->faceList[f];
             const struct TransformedFace transformedFace = transformFace(face,
                                                                          instance->mesh,
