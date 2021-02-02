@@ -50,6 +50,46 @@ void handle_keyup_event(struct KCR_InputState *state, SDL_Event *event) {
         case SDLK_SPACE:
             state->space_pressed = true;
             break;
+
+        case SDLK_1:
+            state->one_pressed = true;
+            break;
+
+        case SDLK_2:
+            state->two_pressed = true;
+            break;
+
+        case SDLK_3:
+            state->three_pressed = true;
+            break;
+
+        case SDLK_4:
+            state->four_pressed = true;
+            break;
+
+        case SDLK_5:
+            state->five_pressed = true;
+            break;
+
+        case SDLK_6:
+            state->six_pressed = true;
+            break;
+
+        case SDLK_7:
+            state->seven_pressed = true;
+            break;
+
+        case SDLK_8:
+            state->eight_pressed = true;
+            break;
+
+        case SDLK_9:
+            state->nine_pressed = true;
+            break;
+
+        case SDLK_0:
+            state->zero_pressed = true;
+            break;
     }
 }
 
@@ -93,6 +133,16 @@ void kcr_input_update_state(struct KCR_InputState* state) {
     state->f1_pressed = false;
     state->f2_pressed = false;
     state->space_pressed = false;
+    state->one_pressed = false;
+    state->two_pressed = false;
+    state->three_pressed = false;
+    state->four_pressed = false;
+    state->five_pressed = false;
+    state->six_pressed = false;
+    state->seven_pressed = false;
+    state->eight_pressed = false;
+    state->nine_pressed = false;
+    state->zero_pressed = false;
     state->mouse_drag_y = 0;
     state->mouse_drag_x = 0;
 

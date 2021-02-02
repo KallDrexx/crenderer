@@ -64,6 +64,8 @@ void draw_filled_triangle(const struct KCR_Display* display, const struct KCR_Ve
             int rightX = (int) v02CurX;
             if (y > 0 && y < display->windowHeight) {
                 if (leftX > rightX) SWAP(leftX, rightX, int);
+                if (leftX < 0) leftX = 0;
+                if (rightX > display->windowWidth) rightX = display->windowWidth;
                 for (int x = leftX; x <= rightX; x++) {
                     draw_pixel(display, x, y, color);
                 }
@@ -85,6 +87,8 @@ void draw_filled_triangle(const struct KCR_Display* display, const struct KCR_Ve
             int rightX = (int) v20CurX;
             if (y > 0 && y < display->windowHeight) {
                 if (leftX > rightX) SWAP(leftX, rightX, int);
+                if (leftX < 0) leftX = 0;
+                if (rightX > display->windowWidth) rightX = display->windowWidth;
                 for (int x = leftX; x <= rightX; x++) {
                     draw_pixel(display, x, y, color);
                 }
@@ -170,10 +174,41 @@ struct TransformedFace transformFace(const struct KCR_Face* face,
     return transformedFace;
 }
 
+void update_render_mode(struct KCR_Renderer *renderer, const struct KCR_InputState *inputState) {
+    if (!inputState->one_pressed &&
+        !inputState->two_pressed &&
+        !inputState->three_pressed &&
+        !inputState->four_pressed) {
+        return;
+    }
+
+    renderer->renderMode.showSolidFaces = false;
+    renderer->renderMode.showVertices = false;
+    renderer->renderMode.showWireframe = false;
+
+    if (inputState->one_pressed) {
+        renderer->renderMode.showWireframe = true;
+    }
+
+    else if (inputState->two_pressed) {
+        renderer->renderMode.showVertices = true;
+        renderer->renderMode.showWireframe = true;
+    }
+
+    else if (inputState->three_pressed) {
+        renderer->renderMode.showSolidFaces = true;
+    }
+
+    else if (inputState->four_pressed) {
+        renderer->renderMode.showSolidFaces = true;
+        renderer->renderMode.showWireframe = true;
+    }
+}
+
 void render_face(const struct KCR_Display* display,
                  const struct KCR_Scene* scene,
                  const struct TransformedFace* face,
-                 bool showWireframe) {
+                 const struct KCR_RenderMode* renderMode) {
 
     struct KCR_Vec2 projectedPoint1 = perform_projection(scene, &face->v1);
     struct KCR_Vec2 projectedPoint2 = perform_projection(scene, &face->v2);
@@ -183,16 +218,41 @@ void render_face(const struct KCR_Display* display,
     adjust_to_screen_space(display, &projectedPoint2);
     adjust_to_screen_space(display, &projectedPoint3);
 
-    if (showWireframe)
-    {
-        draw_line(display, (int) projectedPoint1.x, (int) projectedPoint1.y, (int) projectedPoint2.x, (int) projectedPoint2.y, 0xFFFFFFFF);
-        draw_line(display, (int) projectedPoint2.x, (int) projectedPoint2.y, (int) projectedPoint3.x, (int) projectedPoint3.y, 0xFFFFFFFF);
-        draw_line(display, (int) projectedPoint3.x, (int) projectedPoint3.y, (int) projectedPoint1.x, (int) projectedPoint1.y, 0xFFFFFFFF);
-    }
-    else
-    {
+    if (renderMode->showSolidFaces) {
         const struct KCR_Vec2* points[] = {&projectedPoint1, &projectedPoint2, &projectedPoint3};
         draw_filled_triangle(display, points, 0xFFFFFFFF);
+    }
+
+    if (renderMode->showWireframe) {
+        uint32_t color = renderMode->showSolidFaces ? 0xFF000000 : 0xFFFFFFFF;
+        draw_line(display, (int) projectedPoint1.x, (int) projectedPoint1.y, (int) projectedPoint2.x, (int) projectedPoint2.y, color);
+        draw_line(display, (int) projectedPoint2.x, (int) projectedPoint2.y, (int) projectedPoint3.x, (int) projectedPoint3.y, color);
+        draw_line(display, (int) projectedPoint3.x, (int) projectedPoint3.y, (int) projectedPoint1.x, (int) projectedPoint1.y, color);
+    }
+
+    if (renderMode->showVertices) {
+        #define RECT_SIZE 4.0f
+        #define RECT_HALF_SIZE RECT_SIZE / 2
+        draw_rect(display,
+                  (int) (projectedPoint1.x - RECT_HALF_SIZE),
+                  (int) (projectedPoint1.y - RECT_HALF_SIZE),
+                  RECT_SIZE,
+                  RECT_SIZE,
+                  0xFFFF0000);
+
+        draw_rect(display,
+                  (int) (projectedPoint2.x - RECT_HALF_SIZE),
+                  (int) (projectedPoint2.y - RECT_HALF_SIZE),
+                  RECT_SIZE,
+                  RECT_SIZE,
+                  0xFFFF0000);
+
+        draw_rect(display,
+                  (int) (projectedPoint3.x - RECT_HALF_SIZE),
+                  (int) (projectedPoint3.y - RECT_HALF_SIZE),
+                  RECT_SIZE,
+                  RECT_SIZE,
+                  0xFFFF0000);
     }
 }
 
@@ -201,7 +261,9 @@ bool kcr_renderer_init(struct KCR_Renderer *renderer, const struct KCR_Display *
     assert(display != NULL);
 
     renderer->display = display;
-    renderer->showWireframe = false;
+    renderer->renderMode.showWireframe = false;
+    renderer->renderMode.showVertices = false;
+    renderer->renderMode.showSolidFaces = true;
 
     return true;
 }
@@ -222,9 +284,7 @@ void kcr_renderer_render(struct KCR_Renderer *renderer,
     assert(scene->meshList != NULL);
     assert(inputState != NULL);
 
-    if (inputState->space_pressed) {
-        renderer->showWireframe = !renderer->showWireframe;
-    }
+    update_render_mode(renderer, inputState);
 
     for (size_t i = 0; i < kcr_list_length(scene->instanceList); i++) {
         struct KCR_MeshInstance* instance = &scene->instanceList[i];
@@ -246,7 +306,7 @@ void kcr_renderer_render(struct KCR_Renderer *renderer,
             if (alignment > 0) {
                 // Since the normal is pointing in generally the same direction as the vector of the face to the camera
                 // then the face is facing towards the camera, and we need to cull.
-                render_face(renderer->display, scene, &transformedFace, renderer->showWireframe);
+                render_face(renderer->display, scene, &transformedFace, &renderer->renderMode);
             }
         }
     }

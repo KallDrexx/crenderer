@@ -6,12 +6,18 @@
 #include "../scene/scene.h"
 #include "../input.h"
 
+struct KCR_RenderMode {
+    bool showVertices : 1;
+    bool showSolidFaces : 1;
+    bool showWireframe : 1;
+};
+
 /*
  * Represents the state of the renderer
  */
 struct KCR_Renderer {
     const struct KCR_Display* display;
-    bool showWireframe;
+    struct KCR_RenderMode renderMode;
 };
 
 /*
