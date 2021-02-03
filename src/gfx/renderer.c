@@ -5,12 +5,6 @@
 
 #define SWAP(FIRST, SECOND, TYPE) do {TYPE SWAP = FIRST; FIRST = SECOND; SECOND = SWAP;} while(0)
 
-struct TransformedFace {
-    struct KCR_Vec3 v1;
-    struct KCR_Vec3 v2;
-    struct KCR_Vec3 v3;
-};
-
 static inline void draw_pixel(const struct KCR_Display* display, int x, int y, uint32_t color) {
     if (x >= 0 && x < display->windowWidth && y >= 0 && y < display->windowHeight) {
         int index = kcr_display_get_pixel_index(display, x, y);
@@ -139,76 +133,81 @@ void adjust_to_screen_space(const struct KCR_Display* display, struct KCR_Vec2* 
     point->y = -point->y * PIXELS_PER_UNIT + (float) centerHeight;
 }
 
-struct TransformedFace transformFace(const struct KCR_Face* face,
-        const struct KCR_Mesh* mesh,
-        const struct KCR_Vec3* rotation,
-        const struct KCR_Vec3* position) {
+void transform_face(struct KCR_RenderTriangle* triangle,
+                    const struct KCR_Face* face,
+                    const struct KCR_Mesh* mesh,
+                    const struct KCR_Vec3* rotation,
+                    const struct KCR_Vec3* position) {
 
-    struct TransformedFace transformedFace = {
-            mesh->vertexList[face->vertexIndex1],
-            mesh->vertexList[face->vertexIndex2],
-            mesh->vertexList[face->vertexIndex3],
-    };
+    triangle->v1 = mesh->vertexList[face->vertexIndex1];
+    triangle->v2 = mesh->vertexList[face->vertexIndex2];
+    triangle->v3 = mesh->vertexList[face->vertexIndex3];
+    triangle->color = face->color;
 
-    transformedFace.v1 = kcr_vec3_rotate_x(&transformedFace.v1, rotation->x);
-    transformedFace.v1 = kcr_vec3_rotate_y(&transformedFace.v1, rotation->y);
-    transformedFace.v1 = kcr_vec3_rotate_z(&transformedFace.v1, rotation->z);
-    transformedFace.v1.x += position->x;
-    transformedFace.v1.y += position->y;
-    transformedFace.v1.z += position->z;
+    triangle->v1 = kcr_vec3_rotate_x(&triangle->v1, rotation->x);
+    triangle->v1 = kcr_vec3_rotate_y(&triangle->v1, rotation->y);
+    triangle->v1 = kcr_vec3_rotate_z(&triangle->v1, rotation->z);
+    triangle->v1.x += position->x;
+    triangle->v1.y += position->y;
+    triangle->v1.z += position->z;
 
-    transformedFace.v2 = kcr_vec3_rotate_x(&transformedFace.v2, rotation->x);
-    transformedFace.v2 = kcr_vec3_rotate_y(&transformedFace.v2, rotation->y);
-    transformedFace.v2 = kcr_vec3_rotate_z(&transformedFace.v2, rotation->z);
-    transformedFace.v2.x += position->x;
-    transformedFace.v2.y += position->y;
-    transformedFace.v2.z += position->z;
+    triangle->v2 = kcr_vec3_rotate_x(&triangle->v2, rotation->x);
+    triangle->v2 = kcr_vec3_rotate_y(&triangle->v2, rotation->y);
+    triangle->v2 = kcr_vec3_rotate_z(&triangle->v2, rotation->z);
+    triangle->v2.x += position->x;
+    triangle->v2.y += position->y;
+    triangle->v2.z += position->z;
 
-    transformedFace.v3 = kcr_vec3_rotate_x(&transformedFace.v3, rotation->x);
-    transformedFace.v3 = kcr_vec3_rotate_y(&transformedFace.v3, rotation->y);
-    transformedFace.v3 = kcr_vec3_rotate_z(&transformedFace.v3, rotation->z);
-    transformedFace.v3.x += position->x;
-    transformedFace.v3.y += position->y;
-    transformedFace.v3.z += position->z;
-
-    return transformedFace;
+    triangle->v3 = kcr_vec3_rotate_x(&triangle->v3, rotation->x);
+    triangle->v3 = kcr_vec3_rotate_y(&triangle->v3, rotation->y);
+    triangle->v3 = kcr_vec3_rotate_z(&triangle->v3, rotation->z);
+    triangle->v3.x += position->x;
+    triangle->v3.y += position->y;
+    triangle->v3.z += position->z;
 }
 
 void update_render_mode(struct KCR_Renderer *renderer, const struct KCR_InputState *inputState) {
     if (!inputState->one_pressed &&
         !inputState->two_pressed &&
         !inputState->three_pressed &&
-        !inputState->four_pressed) {
+        !inputState->four_pressed &&
+        !inputState->c_pressed) {
         return;
     }
 
-    renderer->renderMode.showSolidFaces = false;
-    renderer->renderMode.showVertices = false;
-    renderer->renderMode.showWireframe = false;
-
     if (inputState->one_pressed) {
+        renderer->renderMode.showSolidFaces = false;
+        renderer->renderMode.showVertices = false;
         renderer->renderMode.showWireframe = true;
     }
 
-    else if (inputState->two_pressed) {
+    if (inputState->two_pressed) {
+        renderer->renderMode.showSolidFaces = false;
         renderer->renderMode.showVertices = true;
         renderer->renderMode.showWireframe = true;
     }
 
-    else if (inputState->three_pressed) {
+    if (inputState->three_pressed) {
         renderer->renderMode.showSolidFaces = true;
+        renderer->renderMode.showVertices = false;
+        renderer->renderMode.showWireframe = false;
     }
 
-    else if (inputState->four_pressed) {
+    if (inputState->four_pressed) {
+        renderer->renderMode.showVertices = false;
         renderer->renderMode.showSolidFaces = true;
         renderer->renderMode.showWireframe = true;
+    }
+
+    if (inputState->c_pressed) {
+        renderer->renderMode.enableBackFaceCulling = !renderer->renderMode.enableBackFaceCulling;
     }
 }
 
 void render_face(const struct KCR_Display* display,
                  const struct KCR_Scene* scene,
-                 const struct TransformedFace* face,
-                 const struct KCR_RenderMode* renderMode) {
+                 const struct KCR_RenderTriangle* face,
+                 const struct KCR_RenderSettings* renderMode) {
 
     struct KCR_Vec2 projectedPoint1 = perform_projection(scene, &face->v1);
     struct KCR_Vec2 projectedPoint2 = perform_projection(scene, &face->v2);
@@ -220,7 +219,7 @@ void render_face(const struct KCR_Display* display,
 
     if (renderMode->showSolidFaces) {
         const struct KCR_Vec2* points[] = {&projectedPoint1, &projectedPoint2, &projectedPoint3};
-        draw_filled_triangle(display, points, 0xFFFFFFFF);
+        draw_filled_triangle(display, points, face->color);
     }
 
     if (renderMode->showWireframe) {
@@ -261,9 +260,11 @@ bool kcr_renderer_init(struct KCR_Renderer *renderer, const struct KCR_Display *
     assert(display != NULL);
 
     renderer->display = display;
+    renderer->triangles = kcr_list_create(sizeof(struct KCR_RenderTriangle));
     renderer->renderMode.showWireframe = false;
     renderer->renderMode.showVertices = false;
     renderer->renderMode.showSolidFaces = true;
+    renderer->renderMode.enableBackFaceCulling = true;
 
     return true;
 }
@@ -285,29 +286,44 @@ void kcr_renderer_render(struct KCR_Renderer *renderer,
     assert(inputState != NULL);
 
     update_render_mode(renderer, inputState);
+    
+    size_t triangleCount = 0;
+    for (size_t i = 0; i < kcr_list_length(scene->instanceList); i++) {
+        triangleCount += kcr_list_length(scene->instanceList[i].mesh->faceList);
+    }
 
+    size_t listLength = kcr_list_length(renderer->triangles);
+    size_t newTriangles = triangleCount - kcr_list_length(renderer->triangles);
+    if (listLength < triangleCount && newTriangles > 0) {
+        kcr_list_new_items((void**) &renderer->triangles, newTriangles);
+    }
+    
+    size_t triangleIndex = 0;
     for (size_t i = 0; i < kcr_list_length(scene->instanceList); i++) {
         struct KCR_MeshInstance* instance = &scene->instanceList[i];
-
+        
         for (size_t f = 0; f < kcr_list_length(instance->mesh->faceList); f++) {
-//            if (f != 0) continue;
+            struct KCR_RenderTriangle* renderTriangle = &renderer->triangles[triangleIndex];
             const struct KCR_Face* face = &instance->mesh->faceList[f];
-            const struct TransformedFace transformedFace = transformFace(face,
-                                                                         instance->mesh,
-                                                                         &instance->rotation,
-                                                                         &instance->position);
 
-            const struct KCR_Vec3 v1 = kcr_vec3_sub(&transformedFace.v2, &transformedFace.v1);
-            const struct KCR_Vec3 v2 = kcr_vec3_sub(&transformedFace.v3, &transformedFace.v1);
-            const struct KCR_Vec3 normal = kcr_vec3_cross(&v1, &v2);
-            const struct KCR_Vec3 vertexToCameraVector = kcr_vec3_sub(&transformedFace.v1, &scene->cameraPosition);
-            const float alignment = kcr_vec3_dot(&normal, &vertexToCameraVector);
+            transform_face(renderTriangle, face, instance->mesh, &instance->rotation, &instance->position);
+            triangleIndex++;
+        }
+    }
 
-            if (alignment > 0) {
-                // Since the normal is pointing in generally the same direction as the vector of the face to the camera
-                // then the face is facing towards the camera, and we need to cull.
-                render_face(renderer->display, scene, &transformedFace, &renderer->renderMode);
-            }
+    for (triangleIndex = 0; triangleIndex < triangleCount; triangleIndex++) {
+        const struct KCR_RenderTriangle* triangle = &renderer->triangles[triangleIndex];
+
+        const struct KCR_Vec3 v1 = kcr_vec3_sub(&triangle->v2, &triangle->v1);
+        const struct KCR_Vec3 v2 = kcr_vec3_sub(&triangle->v3, &triangle->v1);
+        const struct KCR_Vec3 normal = kcr_vec3_cross(&v1, &v2);
+        const struct KCR_Vec3 vertexToCameraVector = kcr_vec3_sub(&triangle->v1, &scene->cameraPosition);
+        const float alignment = kcr_vec3_dot(&normal, &vertexToCameraVector);
+
+        if (!renderer->renderMode.enableBackFaceCulling || alignment > 0) {
+            // Since the normal is pointing in generally the same direction as the vector of the face to the camera
+            // then the face is facing towards the camera, and we need to cull.
+            render_face(renderer->display, scene, triangle, &renderer->renderMode);
         }
     }
 }

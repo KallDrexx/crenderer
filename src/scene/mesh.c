@@ -4,6 +4,14 @@
 #include <assert.h>
 #include "mesh.h"
 #include "../list.h"
+#include "../gfx/color_library.h"
+
+#define COLOR_COUNT 41
+
+uint32_t colors[] = {RED, MAROON, BROWN, OLIVE, ORANGE, GOLD, GREEN, TEAL, TURQUOISE, BLUE, YELLOW, NAVAJO_WHITE, PURPLE,
+                     PINK, WHEAT, CORN_SILK, TAN, AZURE, SLATE_GRAY, WHITE, LAVENDER, STEEL_BLUE, AQUA, GREEN_YELLOW,
+                     DARK_RED, LIGHT_SALMON, FIREBRICK, KHAKI, LAWN_GREEN, SEA_GREEN, CYAN, SKY_BLUE, INDIGO, DARK_ORCHID,
+                     MAGENTA, CORN_FLOWER_BLUE, LIGHT_CORAL, HOT_PINK, CHOCOLATE, MEDIUM_AQUA_MARINE, BROWN};
 
 bool kcr_mesh_from_obj_file(struct KCR_Mesh* mesh, char* filename) {
     #define BUFFER_SIZE 1000
@@ -77,6 +85,7 @@ bool kcr_mesh_from_obj_file(struct KCR_Mesh* mesh, char* filename) {
                         face->vertexIndex1 = v3 - 1;
                         face->vertexIndex2 = v2 - 1;
                         face->vertexIndex3 = v1 - 1;
+                        face->color = colors[line % COLOR_COUNT];
 
                         firstIndex++;
                     }

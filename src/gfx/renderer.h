@@ -4,12 +4,21 @@
 #include <stdbool.h>
 #include "display.h"
 #include "../scene/scene.h"
+#include "../scene/mesh.h"
 #include "../input.h"
 
-struct KCR_RenderMode {
+struct KCR_RenderSettings {
     bool showVertices : 1;
     bool showSolidFaces : 1;
     bool showWireframe : 1;
+    bool enableBackFaceCulling : 1;
+};
+
+struct KCR_RenderTriangle {
+    struct KCR_Vec3 v1;
+    struct KCR_Vec3 v2;
+    struct KCR_Vec3 v3;
+    uint32_t color;
 };
 
 /*
@@ -17,7 +26,8 @@ struct KCR_RenderMode {
  */
 struct KCR_Renderer {
     const struct KCR_Display* display;
-    struct KCR_RenderMode renderMode;
+    struct KCR_RenderSettings renderMode;
+    struct KCR_RenderTriangle* triangles;
 };
 
 /*

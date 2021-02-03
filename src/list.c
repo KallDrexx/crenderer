@@ -21,7 +21,7 @@ void* kcr_list_create(size_t itemSize) {
     return list->data;
 }
 
-void* kcr_list_new_item(void **list) {
+void* kcr_list_new_items(void **list, size_t countToAdd) {
     assert(list != NULL);
     assert(*list != NULL);
 
@@ -31,11 +31,14 @@ void* kcr_list_new_item(void **list) {
 
     size_t capacity = realList->capacity;
     size_t count = realList->length;
-    if (count + 1 > capacity) {
-        size_t newCapacity = capacity + (capacity * 5) / 4;
-        if (newCapacity < MIN_GROWTH) {
-            newCapacity = capacity + MIN_GROWTH;
-        }
+    if (count + countToAdd > capacity) {
+        size_t newCapacity = capacity;
+        do {
+            newCapacity = newCapacity + (newCapacity * 5) / 4;
+            if (newCapacity < MIN_GROWTH) {
+                newCapacity = newCapacity + MIN_GROWTH;
+            }
+        } while (newCapacity <= count + countToAdd);
 
         struct List* newList = realloc(realList, sizeof(struct List) + realList->itemSize * newCapacity);
         if (newList == NULL) {
@@ -50,11 +53,18 @@ void* kcr_list_new_item(void **list) {
         *list = (char*) realList->data;
     }
 
-    char* slot = (char*) realList + (sizeof(struct List) + realList->itemSize * count);
-    memset(slot, 0, realList->itemSize);
-    realList->length++;
+    char* firstSlot = (char*) realList + (sizeof(struct List) + realList->itemSize * count);
+    memset(firstSlot, 0, realList->itemSize * countToAdd);
+    realList->length += countToAdd;
 
-    return slot;
+    return firstSlot;
+}
+
+void* kcr_list_new_item(void **list) {
+    assert(list != NULL);
+    assert(*list != NULL);
+
+    return kcr_list_new_items(list, 1);
 }
 
 size_t kcr_list_length(const void *list) {

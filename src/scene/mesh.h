@@ -2,6 +2,7 @@
 #define CRENDERER_MESH_H
 
 #include <stddef.h>
+#include <stdint.h>
 #include <stdbool.h>
 #include "../math/vector.h"
 
@@ -13,6 +14,7 @@ struct KCR_Face {
     int vertexIndex1;
     int vertexIndex2;
     int vertexIndex3;
+    uint32_t color;
 };
 
 /*

@@ -18,6 +18,12 @@ void* kcr_list_create(size_t itemSize);
 void* kcr_list_new_item(void** list);
 
 /*
+ * Adds multiple new items to the collection and returns a pointer to the first new item's position.
+ * Each item created will be zeroed out.
+ */
+void* kcr_list_new_items(void** list, size_t countToAdd);
+
+/*
  * Retrieves the number of items that are currently in the list.
  */
 size_t kcr_list_length(const void* list);

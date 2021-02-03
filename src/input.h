@@ -27,6 +27,7 @@ struct KCR_InputState {
     bool eight_pressed : 1;
     bool nine_pressed : 1;
     bool zero_pressed : 1;
+    bool c_pressed : 1;
     int32_t mouse_drag_x;
     int32_t mouse_drag_y;
 };

@@ -90,6 +90,10 @@ void handle_keyup_event(struct KCR_InputState *state, SDL_Event *event) {
         case SDLK_0:
             state->zero_pressed = true;
             break;
+
+        case SDLK_c:
+            state->c_pressed = true;
+            break;
     }
 }
 
@@ -143,6 +147,7 @@ void kcr_input_update_state(struct KCR_InputState* state) {
     state->eight_pressed = false;
     state->nine_pressed = false;
     state->zero_pressed = false;
+    state->c_pressed = false;
     state->mouse_drag_y = 0;
     state->mouse_drag_x = 0;
 
