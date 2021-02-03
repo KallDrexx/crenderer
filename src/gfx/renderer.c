@@ -1,5 +1,6 @@
 #include <math.h>
 #include <assert.h>
+#include <stdlib.h>
 #include "renderer.h"
 #include "../list.h"
 
@@ -257,18 +258,13 @@ void render_face(const struct KCR_Display* display,
     }
 }
 
-void sort_triangles(struct KCR_RenderTriangle* triangleList, size_t triangleCount) {
-    // Don't use kcr_list_length for triangle count, as we might have reduced the number of triangles
-    // but the list hasn't been reduced in size
-    for (size_t i = 0; i < triangleCount; i++) {
-        for (size_t j = 0; j < triangleCount - 1; j++) {
-            if (triangleList[j].averageDepth > triangleList[j + 1].averageDepth) {
-                struct KCR_RenderTriangle temp = triangleList[j + 1];
-                triangleList[j + 1] = triangleList[j];
-                triangleList[j] = temp;
-            }
-        }
-    }
+int sort_triangle_function(const void* a, const void* b) {
+    float depthA = ((struct KCR_RenderTriangle*) a)->averageDepth;
+    float depthB = ((struct KCR_RenderTriangle*) b)->averageDepth;
+
+    if (depthB < depthA) return 1;
+    if (depthB > depthA) return -1;
+    return 0;
 }
 
 bool kcr_renderer_init(struct KCR_Renderer *renderer, const struct KCR_Display *display) {
@@ -327,7 +323,7 @@ void kcr_renderer_render(struct KCR_Renderer *renderer,
         }
     }
 
-    sort_triangles(renderer->triangles, triangleCount);
+    qsort(renderer->triangles, triangleCount, sizeof(struct KCR_RenderTriangle), sort_triangle_function);
 
     for (triangleIndex = 0; triangleIndex < triangleCount; triangleIndex++) {
 //        if (triangleIndex != 1) continue;
