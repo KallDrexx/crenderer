@@ -19,6 +19,7 @@ struct KCR_RenderTriangle {
     struct KCR_Vec3 v2;
     struct KCR_Vec3 v3;
     uint32_t color;
+    float averageDepth;
 };
 
 /*

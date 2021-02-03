@@ -164,6 +164,8 @@ void transform_face(struct KCR_RenderTriangle* triangle,
     triangle->v3.x += position->x;
     triangle->v3.y += position->y;
     triangle->v3.z += position->z;
+
+    triangle->averageDepth = (triangle->v1.z + triangle->v2.z + triangle->v3.z) / 3;
 }
 
 void update_render_mode(struct KCR_Renderer *renderer, const struct KCR_InputState *inputState) {
@@ -255,6 +257,20 @@ void render_face(const struct KCR_Display* display,
     }
 }
 
+void sort_triangles(struct KCR_RenderTriangle* triangleList, size_t triangleCount) {
+    // Don't use kcr_list_length for triangle count, as we might have reduced the number of triangles
+    // but the list hasn't been reduced in size
+    for (size_t i = 0; i < triangleCount; i++) {
+        for (size_t j = 0; j < triangleCount - 1; j++) {
+            if (triangleList[j].averageDepth > triangleList[j + 1].averageDepth) {
+                struct KCR_RenderTriangle temp = triangleList[j + 1];
+                triangleList[j + 1] = triangleList[j];
+                triangleList[j] = temp;
+            }
+        }
+    }
+}
+
 bool kcr_renderer_init(struct KCR_Renderer *renderer, const struct KCR_Display *display) {
     assert(renderer != NULL);
     assert(display != NULL);
@@ -311,7 +327,11 @@ void kcr_renderer_render(struct KCR_Renderer *renderer,
         }
     }
 
+    sort_triangles(renderer->triangles, triangleCount);
+
     for (triangleIndex = 0; triangleIndex < triangleCount; triangleIndex++) {
+//        if (triangleIndex != 1) continue;
+
         const struct KCR_RenderTriangle* triangle = &renderer->triangles[triangleIndex];
 
         const struct KCR_Vec3 v1 = kcr_vec3_sub(&triangle->v2, &triangle->v1);
