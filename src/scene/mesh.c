@@ -57,45 +57,50 @@ bool kcr_mesh_from_obj_file(struct KCR_Mesh* mesh, char* filename) {
                 // face definition
                 char* start = buffer + 1;
                 char* end;
-                int firstIndex = 0;
                 int readCount = 0;
-                int indices[3];
+                int* indices = kcr_list_create(sizeof(int));
                 while(1) {
-                    int index = readCount % 3;
-                    indices[index] = strtol(start, &end, 10);
-                    readCount++;
+                    int value = strtol(start, &end, 10);
                     if (start == end) {
+                        size_t length = kcr_list_length(indices);
+                        if (length >= 3) {
+                            for (size_t i = 0; i < length - 1; i += 2) {
+                                int v1 = indices[i % length];
+                                int v2 = indices[(i + 1) % length];
+                                int v3 = indices[(i + 2) % length];
+
+                                struct KCR_Face* face = kcr_list_new_item((void**) &faceList);
+
+                                // OBJ files lists them listed in CCW, but right now our engine uses cw.  OBJ files also
+                                // use 1 based indexing, but we obviously use zero based indexing
+                                face->vertexIndex1 = v3 - 1;
+                                face->vertexIndex2 = v2 - 1;
+                                face->vertexIndex3 = v1 - 1;
+                                face->color = colors[(line + i) % COLOR_COUNT];
+                            }
+                        } else {
+                            fprintf(stderr, "Line %i has less than 3 faces\n", line);
+                        }
+
                         break;
                     }
 
-                    if (indices[index] <= 0 || indices[index] > (int) kcr_list_length(vertexList)) {
-                        fprintf(stderr, "Line %i has invalid face index of %i\n", line, indices[index]);
-                        goto nextLoop;
+                    if (value <= 0 || value > (int) kcr_list_length(vertexList)) {
+                        fprintf(stderr, "Line %i has invalid face index of %i\n", line, indices[readCount]);
+                        break;
                     }
 
-                    if (readCount >= 3) {
-                        int v1 = indices[firstIndex % 3];
-                        int v2 = indices[(firstIndex + 1) % 3];
-                        int v3 = indices[(firstIndex + 2) % 3];
-
-                        struct KCR_Face* face = kcr_list_new_item((void**) &faceList);
-
-                        // OBJ files lists them listed in CCW, but right now our engine uses cw.  OBJ files also
-                        // use 1 based indexing, but we obviously use zero based indexing
-                        face->vertexIndex1 = v3 - 1;
-                        face->vertexIndex2 = v2 - 1;
-                        face->vertexIndex3 = v1 - 1;
-                        face->color = colors[line % COLOR_COUNT];
-
-                        firstIndex++;
-                    }
+                    kcr_list_new_item((void**) &indices);
+                    indices[readCount] = value;
 
                     start = end;
                     while (*start == '/') {
                         strtof(start + 1, &end);
                         start = end;
                     }
+                    readCount++;
                 }
+                kcr_list_free(indices);
             }
         }
 
