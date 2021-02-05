@@ -136,35 +136,28 @@ void adjust_to_screen_space(const struct KCR_Display* display, struct KCR_Vec2* 
 
 void transform_face(struct KCR_RenderTriangle* triangle,
                     const struct KCR_Face* face,
-                    const struct KCR_Mesh* mesh,
-                    const struct KCR_Vec3* rotation,
-                    const struct KCR_Vec3* position) {
+                    const struct KCR_MeshInstance* instance) {
 
-    triangle->v1 = mesh->vertexList[face->vertexIndex1];
-    triangle->v2 = mesh->vertexList[face->vertexIndex2];
-    triangle->v3 = mesh->vertexList[face->vertexIndex3];
+    triangle->v1 = instance->mesh->vertexList[face->vertexIndex1];
+    triangle->v2 = instance->mesh->vertexList[face->vertexIndex2];
+    triangle->v3 = instance->mesh->vertexList[face->vertexIndex3];
     triangle->color = face->color;
 
-    triangle->v1 = kcr_vec3_rotate_x(&triangle->v1, rotation->x);
-    triangle->v1 = kcr_vec3_rotate_y(&triangle->v1, rotation->y);
-    triangle->v1 = kcr_vec3_rotate_z(&triangle->v1, rotation->z);
-    triangle->v1.x += position->x;
-    triangle->v1.y += position->y;
-    triangle->v1.z += position->z;
+    triangle->v1 = kcr_mat4_vec3_mult(&instance->transform, &triangle->v1);
+    triangle->v2 = kcr_mat4_vec3_mult(&instance->transform, &triangle->v2);
+    triangle->v3 = kcr_mat4_vec3_mult(&instance->transform, &triangle->v3);
 
-    triangle->v2 = kcr_vec3_rotate_x(&triangle->v2, rotation->x);
-    triangle->v2 = kcr_vec3_rotate_y(&triangle->v2, rotation->y);
-    triangle->v2 = kcr_vec3_rotate_z(&triangle->v2, rotation->z);
-    triangle->v2.x += position->x;
-    triangle->v2.y += position->y;
-    triangle->v2.z += position->z;
+    triangle->v1.x += instance->position.x;
+    triangle->v1.y += instance->position.y;
+    triangle->v1.z += instance->position.z;
 
-    triangle->v3 = kcr_vec3_rotate_x(&triangle->v3, rotation->x);
-    triangle->v3 = kcr_vec3_rotate_y(&triangle->v3, rotation->y);
-    triangle->v3 = kcr_vec3_rotate_z(&triangle->v3, rotation->z);
-    triangle->v3.x += position->x;
-    triangle->v3.y += position->y;
-    triangle->v3.z += position->z;
+    triangle->v2.x += instance->position.x;
+    triangle->v2.y += instance->position.y;
+    triangle->v2.z += instance->position.z;
+
+    triangle->v3.x += instance->position.x;
+    triangle->v3.y += instance->position.y;
+    triangle->v3.z += instance->position.z;
 
     triangle->averageDepth = (triangle->v1.z + triangle->v2.z + triangle->v3.z) / 3;
 }
@@ -318,7 +311,7 @@ void kcr_renderer_render(struct KCR_Renderer *renderer,
             struct KCR_RenderTriangle* renderTriangle = &renderer->triangles[triangleIndex];
             const struct KCR_Face* face = &instance->mesh->faceList[f];
 
-            transform_face(renderTriangle, face, instance->mesh, &instance->rotation, &instance->position);
+            transform_face(renderTriangle, face, instance);
             triangleIndex++;
         }
     }

@@ -40,7 +40,7 @@ bool kcr_mesh_from_obj_file(struct KCR_Mesh* mesh, char* filename) {
                 for (int x = 0; x < 3; x++) {
                     values[x] = strtof(start, &end);
                     if (start == end) {
-                        fprintf(stderr, "Line %i has vertex data in an unknown format.\n", line);
+                        fprintf(stderr, "Line %i has vertex m in an unknown format.\n", line);
                         goto nextLoop;
                     }
 
@@ -132,7 +132,7 @@ bool kcr_mesh_instance_init(struct KCR_MeshInstance* instance, struct KCR_Mesh *
 
     instance->mesh = mesh;
     instance->position = (struct KCR_Vec3) {0};
-    instance->rotation = (struct KCR_Vec3) {0};
+    instance->transform = kcr_mat4_identity();
 
     return true;
 }

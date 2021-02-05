@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "../math/vector.h"
+#include "../math/matrix.h"
 
 /*
  * Structure representing a face of a triangle, with the indexes to the vertex.  Faces are assumed to be
@@ -31,8 +32,8 @@ struct KCR_Mesh {
  */
 struct KCR_MeshInstance {
     struct KCR_Mesh* mesh;
-    struct KCR_Vec3 rotation;
     struct KCR_Vec3 position;
+    struct KCR_Matrix4 transform;
 };
 
 /*

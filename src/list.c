@@ -48,7 +48,7 @@ void* kcr_list_new_items(void **list, size_t countToAdd) {
         realList = newList;
         realList->capacity = newCapacity;
 
-        // Since realloc may have moved the data to accommodate the new size, make sure the consumer's pointer
+        // Since realloc may have moved the m to accommodate the new size, make sure the consumer's pointer
         // is updated.
         *list = (char*) realList->data;
     }

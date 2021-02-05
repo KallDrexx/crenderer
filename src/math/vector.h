@@ -19,6 +19,16 @@ struct KCR_Vec3 {
 };
 
 /*
+ * A vector with 4 components
+ */
+struct KCR_Vec4 {
+    float x;
+    float y;
+    float z;
+    float w;
+};
+
+/*
  * Gets the magnitude of a KCR_Vec3
  */
 float kcr_vec3_length(const struct KCR_Vec3 *vector);
@@ -71,6 +81,6 @@ struct KCR_Vec3 kcr_vec3_rotate_z(const struct KCR_Vec3 *vector, float angle);
 /*
  * Normalizes a KCR_Vec3 to create a unit vector, producing a new KCR_Vec3 with the result
  */
-struct KCR_Vec3 kcr_vec3_normalize(const struct KCR_Vec3 *vector);
+struct KCR_Vec3 kcr_vec3_normalize(const struct KCR_Vec3* vector);
 
 #endif //CRENDERER_VECTOR_H

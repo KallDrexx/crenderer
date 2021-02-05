@@ -30,7 +30,7 @@ size_t kcr_list_length(const void* list);
 
 /*
  * Will free the memory allocated by the list, including all memory occupied by items contained
- * within the list.  If items contain their own pointers to other data, freeing those must be
+ * within the list.  If items contain their own pointers to other m, freeing those must be
  * done prior to freeing the list, otherwise memory leaks will occur.
  */
 void kcr_list_free(void* list);
