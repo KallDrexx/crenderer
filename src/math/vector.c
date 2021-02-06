@@ -61,36 +61,6 @@ struct KCR_Vec3 kcr_vec3_cross(const struct KCR_Vec3 *first, const struct KCR_Ve
     return result;
 }
 
-struct KCR_Vec3 kcr_vec3_rotate_x(const struct KCR_Vec3 *vector, float angle) {
-    struct KCR_Vec3 result = {
-            vector->x,
-            vector->y * cosf(angle) - vector->z * sinf(angle),
-            vector->y * sinf(angle) + vector->z * cosf(angle),
-    };
-
-    return result;
-}
-
-struct KCR_Vec3 kcr_vec3_rotate_y(const struct KCR_Vec3 *vector, float angle) {
-    struct KCR_Vec3 result = {
-            vector->z * sinf(angle) + vector->x * cosf(angle),
-            vector->y,
-            vector->z * cosf(angle) - vector->x * sinf(angle),
-    };
-
-    return result;
-}
-
-struct KCR_Vec3 kcr_vec3_rotate_z(const struct KCR_Vec3 *vector, float angle) {
-    struct KCR_Vec3 result = {
-            vector->x * cosf(angle) - vector->y * sinf(angle),
-            vector->x * sinf(angle) + vector->y * cosf(angle),
-            vector->z,
-    };
-
-    return result;
-}
-
 struct KCR_Vec3 kcr_vec3_normalize(const struct KCR_Vec3 *vector) {
     struct KCR_Vec3 result = kcr_vec3_div(vector, kcr_vec3_length(vector));
     return result;

@@ -33,7 +33,7 @@ struct KCR_Mesh {
 struct KCR_MeshInstance {
     struct KCR_Mesh* mesh;
     struct KCR_Vec3 position;
-    struct KCR_Matrix4 transform;
+    struct KCR_Vec3 rotation;
 };
 
 /*

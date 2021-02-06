@@ -64,23 +64,24 @@ float kcr_vec3_dot(const struct KCR_Vec3 *first, const struct KCR_Vec3 *second);
 struct KCR_Vec3 kcr_vec3_cross(const struct KCR_Vec3 *first, const struct KCR_Vec3 *second);
 
 /*
- * Rotates a KCR_Vec3 by the specified angle (in radians) on the x axis, producing a new KCR_Vec3 with the results
- */
-struct KCR_Vec3 kcr_vec3_rotate_x(const struct KCR_Vec3 *vector, float angle);
-
-/*
- * Rotates a KCR_Vec3 by the specified angle (in radians) on the y axis, producing a new KCR_Vec3 with the results
- */
-struct KCR_Vec3 kcr_vec3_rotate_y(const struct KCR_Vec3 *vector, float angle);
-
-/*
- * Rotates a KCR_Vec3 by the specified angle (in radians) on the z axis, producing a new KCR_Vec3 with the results
- */
-struct KCR_Vec3 kcr_vec3_rotate_z(const struct KCR_Vec3 *vector, float angle);
-
-/*
  * Normalizes a KCR_Vec3 to create a unit vector, producing a new KCR_Vec3 with the result
  */
 struct KCR_Vec3 kcr_vec3_normalize(const struct KCR_Vec3* vector);
+
+/*
+ * Creates a 4 component vector from a 3 component vector with the specified w component
+ */
+static inline struct KCR_Vec4 kcr_vec4_from_vec3(const struct KCR_Vec3* vec3, float w) {
+    struct KCR_Vec4 result = {vec3->x, vec3->y, vec3->z, w};
+    return result;
+}
+
+/*
+ * Creates a 3 component vector from a 4 component vector, ignoring the y component
+ */
+static inline struct KCR_Vec3 kcr_vec3_from_vec4(const struct KCR_Vec4* vec4) {
+    struct KCR_Vec3 result = {vec4->x, vec4->y, vec4->z};
+    return result;
+}
 
 #endif //CRENDERER_VECTOR_H

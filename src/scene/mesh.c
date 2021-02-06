@@ -131,8 +131,8 @@ bool kcr_mesh_instance_init(struct KCR_MeshInstance* instance, struct KCR_Mesh *
     assert(mesh != NULL);
 
     instance->mesh = mesh;
-    instance->position = (struct KCR_Vec3) {0};
-    instance->transform = kcr_mat4_identity();
+    instance->position = (struct KCR_Vec3){0};
+    instance->rotation = (struct KCR_Vec3){0};
 
     return true;
 }

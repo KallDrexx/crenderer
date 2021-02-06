@@ -24,7 +24,7 @@ bool kcr_scene_init(struct KCR_Scene* scene);
  * Updates the scene for the current frame based on the inputs the user has made and the time since
  * the last frame.
  */
-void kcr_scene_update(struct KCR_Scene* scene, const struct KCR_InputState* inputState, __attribute__((unused)) float timeDelta);
+void kcr_scene_update(struct KCR_Scene* scene, const struct KCR_InputState* inputState, float timeDelta);
 
 /*
  * Un-initializes the scene, freeing any memory the scene itself might have allocated.  The scene itself

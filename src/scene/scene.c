@@ -36,8 +36,6 @@ bool kcr_scene_init(struct KCR_Scene* scene) {
 
     struct KCR_MeshInstance* instance = kcr_list_new_item((void**) &scene->instanceList);
     kcr_mesh_instance_init(instance, &scene->meshList[meshIndex % kcr_list_length(scene->meshList)]);
-    instance->transform = kcr_mat4_scale(2, 1, 2);
-
     instance->position.x = 0;
     instance->position.y = 0;
     instance->position.z = -10;
@@ -45,7 +43,7 @@ bool kcr_scene_init(struct KCR_Scene* scene) {
     return true;
 }
 
-void kcr_scene_update(struct KCR_Scene* scene, const struct KCR_InputState* inputState, __attribute__((unused)) float timeDelta) {
+void kcr_scene_update(struct KCR_Scene* scene, const struct KCR_InputState* inputState, float timeDelta) {
     #define KEYBOARD_ROTATION_SPEED 1.0f
     #define MOUSE_ROTATION_SPEED 0.01f
     #define ZOOM_SPEED 50.0f
@@ -64,19 +62,19 @@ void kcr_scene_update(struct KCR_Scene* scene, const struct KCR_InputState* inpu
     for (size_t i = 0; i < kcr_list_length(scene->instanceList); i++) {
         struct KCR_MeshInstance *instance = &scene->instanceList[i];
 
-//        if (inputState->up_down) instance->rotation.x += KEYBOARD_ROTATION_SPEED * timeDelta;
-//        if (inputState->down_down) instance->rotation.x -= KEYBOARD_ROTATION_SPEED * timeDelta;
-//        if (inputState->left_down) instance->rotation.y += KEYBOARD_ROTATION_SPEED * timeDelta;
-//        if (inputState->right_down) instance->rotation.y -= KEYBOARD_ROTATION_SPEED * timeDelta;
-//        if (inputState->home_down) instance->rotation.z -= KEYBOARD_ROTATION_SPEED * timeDelta;
-//        if (inputState->end_down) instance->rotation.z += KEYBOARD_ROTATION_SPEED * timeDelta;
-//        if (inputState->minus_down) instance->position.z -= ZOOM_SPEED * timeDelta;
-//        if (inputState->equals_down) instance->position.z += ZOOM_SPEED * timeDelta;
-//
-//        if (inputState->left_mouse_down) {
-//            instance->rotation.y -= MOUSE_ROTATION_SPEED * inputState->mouse_drag_x;
-//            instance->rotation.x -= MOUSE_ROTATION_SPEED * inputState->mouse_drag_y;
-//        }
+        if (inputState->up_down) instance->rotation.x += KEYBOARD_ROTATION_SPEED * timeDelta;
+        if (inputState->down_down) instance->rotation.x -= KEYBOARD_ROTATION_SPEED * timeDelta;
+        if (inputState->left_down) instance->rotation.y += KEYBOARD_ROTATION_SPEED * timeDelta;
+        if (inputState->right_down) instance->rotation.y -= KEYBOARD_ROTATION_SPEED * timeDelta;
+        if (inputState->home_down) instance->rotation.z -= KEYBOARD_ROTATION_SPEED * timeDelta;
+        if (inputState->end_down) instance->rotation.z += KEYBOARD_ROTATION_SPEED * timeDelta;
+        if (inputState->minus_down) instance->position.z -= ZOOM_SPEED * timeDelta;
+        if (inputState->equals_down) instance->position.z += ZOOM_SPEED * timeDelta;
+
+        if (inputState->left_mouse_down) {
+            instance->rotation.y -= MOUSE_ROTATION_SPEED * inputState->mouse_drag_x;
+            instance->rotation.x -= MOUSE_ROTATION_SPEED * inputState->mouse_drag_y;
+        }
 
         if (meshChanged) {
             size_t index = meshIndex % kcr_list_length(scene->meshList);

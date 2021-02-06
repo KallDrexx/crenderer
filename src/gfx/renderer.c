@@ -136,28 +136,17 @@ void adjust_to_screen_space(const struct KCR_Display* display, struct KCR_Vec2* 
 
 void transform_face(struct KCR_RenderTriangle* triangle,
                     const struct KCR_Face* face,
-                    const struct KCR_MeshInstance* instance) {
+                    const struct KCR_Mesh* mesh,
+                    const struct KCR_Matrix4* transform) {
 
-    triangle->v1 = instance->mesh->vertexList[face->vertexIndex1];
-    triangle->v2 = instance->mesh->vertexList[face->vertexIndex2];
-    triangle->v3 = instance->mesh->vertexList[face->vertexIndex3];
+    triangle->v1 = mesh->vertexList[face->vertexIndex1];
+    triangle->v2 = mesh->vertexList[face->vertexIndex2];
+    triangle->v3 = mesh->vertexList[face->vertexIndex3];
     triangle->color = face->color;
 
-    triangle->v1 = kcr_mat4_vec3_mult(&instance->transform, &triangle->v1);
-    triangle->v2 = kcr_mat4_vec3_mult(&instance->transform, &triangle->v2);
-    triangle->v3 = kcr_mat4_vec3_mult(&instance->transform, &triangle->v3);
-
-    triangle->v1.x += instance->position.x;
-    triangle->v1.y += instance->position.y;
-    triangle->v1.z += instance->position.z;
-
-    triangle->v2.x += instance->position.x;
-    triangle->v2.y += instance->position.y;
-    triangle->v2.z += instance->position.z;
-
-    triangle->v3.x += instance->position.x;
-    triangle->v3.y += instance->position.y;
-    triangle->v3.z += instance->position.z;
+    triangle->v1 = kcr_mat4_vec3_mult(transform, &triangle->v1);
+    triangle->v2 = kcr_mat4_vec3_mult(transform, &triangle->v2);
+    triangle->v3 = kcr_mat4_vec3_mult(transform, &triangle->v3);
 
     triangle->averageDepth = (triangle->v1.z + triangle->v2.z + triangle->v3.z) / 3;
 }
@@ -306,12 +295,22 @@ void kcr_renderer_render(struct KCR_Renderer *renderer,
     size_t triangleIndex = 0;
     for (size_t i = 0; i < kcr_list_length(scene->instanceList); i++) {
         struct KCR_MeshInstance* instance = &scene->instanceList[i];
+        struct KCR_Matrix4 translation = kcr_mat4_translate(instance->position.x, instance->position.y, instance->position.z);
+        struct KCR_Matrix4 rotationX = kcr_mat4_rotation_x(instance->rotation.x);
+        struct KCR_Matrix4 rotationY = kcr_mat4_rotation_y(instance->rotation.y);
+        struct KCR_Matrix4 rotationZ = kcr_mat4_rotation_z(instance->rotation.z);
+
+        struct KCR_Matrix4 transform = kcr_mat4_identity();
+        transform = kcr_mat4_mult(&transform, &translation);
+        transform = kcr_mat4_mult(&transform, &rotationX);
+        transform = kcr_mat4_mult(&transform, &rotationY);
+        transform = kcr_mat4_mult(&transform, &rotationZ);
         
         for (size_t f = 0; f < kcr_list_length(instance->mesh->faceList); f++) {
             struct KCR_RenderTriangle* renderTriangle = &renderer->triangles[triangleIndex];
             const struct KCR_Face* face = &instance->mesh->faceList[f];
 
-            transform_face(renderTriangle, face, instance);
+            transform_face(renderTriangle, face, instance->mesh, &transform);
             triangleIndex++;
         }
     }
@@ -319,8 +318,6 @@ void kcr_renderer_render(struct KCR_Renderer *renderer,
     qsort(renderer->triangles, triangleCount, sizeof(struct KCR_RenderTriangle), sort_triangle_function);
 
     for (triangleIndex = 0; triangleIndex < triangleCount; triangleIndex++) {
-//        if (triangleIndex != 1) continue;
-
         const struct KCR_RenderTriangle* triangle = &renderer->triangles[triangleIndex];
 
         const struct KCR_Vec3 v1 = kcr_vec3_sub(&triangle->v2, &triangle->v1);
