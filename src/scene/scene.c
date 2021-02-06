@@ -46,7 +46,7 @@ bool kcr_scene_init(struct KCR_Scene* scene) {
 void kcr_scene_update(struct KCR_Scene* scene, const struct KCR_InputState* inputState, float timeDelta) {
     #define KEYBOARD_ROTATION_SPEED 1.0f
     #define MOUSE_ROTATION_SPEED 0.01f
-    #define ZOOM_SPEED 50.0f
+    #define MOVE_SPEED 5.0f
 
     bool meshChanged = false;
     if (inputState->f1_pressed && meshIndex > 0) {
@@ -62,14 +62,14 @@ void kcr_scene_update(struct KCR_Scene* scene, const struct KCR_InputState* inpu
     for (size_t i = 0; i < kcr_list_length(scene->instanceList); i++) {
         struct KCR_MeshInstance *instance = &scene->instanceList[i];
 
-        if (inputState->up_down) instance->rotation.x += KEYBOARD_ROTATION_SPEED * timeDelta;
-        if (inputState->down_down) instance->rotation.x -= KEYBOARD_ROTATION_SPEED * timeDelta;
-        if (inputState->left_down) instance->rotation.y += KEYBOARD_ROTATION_SPEED * timeDelta;
-        if (inputState->right_down) instance->rotation.y -= KEYBOARD_ROTATION_SPEED * timeDelta;
+        if (inputState->up_down) instance->position.y -= MOVE_SPEED * timeDelta;
+        if (inputState->down_down) instance->position.y += MOVE_SPEED * timeDelta;
+        if (inputState->left_down) instance->position.x += MOVE_SPEED * timeDelta;
+        if (inputState->right_down) instance->position.x -= MOVE_SPEED * timeDelta;
         if (inputState->home_down) instance->rotation.z -= KEYBOARD_ROTATION_SPEED * timeDelta;
         if (inputState->end_down) instance->rotation.z += KEYBOARD_ROTATION_SPEED * timeDelta;
-        if (inputState->minus_down) instance->position.z -= ZOOM_SPEED * timeDelta;
-        if (inputState->equals_down) instance->position.z += ZOOM_SPEED * timeDelta;
+        if (inputState->minus_down) instance->position.z -= MOVE_SPEED * timeDelta;
+        if (inputState->equals_down) instance->position.z += MOVE_SPEED * timeDelta;
 
         if (inputState->left_mouse_down) {
             instance->rotation.y -= MOUSE_ROTATION_SPEED * inputState->mouse_drag_x;
