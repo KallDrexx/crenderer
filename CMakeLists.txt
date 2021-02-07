@@ -13,4 +13,11 @@ add_executable(crenderer src/main.c src/gfx/display.h src/gfx/display.c src/inpu
 
 target_link_libraries(crenderer ${SDL2_LIBRARY})
 
-file(COPY ${CMAKE_CURRENT_LIST_DIR}/assets DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+add_custom_command(
+        TARGET crenderer PRE_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+                ${CMAKE_SOURCE_DIR}/assets
+                ${CMAKE_CURRENT_BINARY_DIR}/assets
+)
+
+SET_PROPERTY(DIRECTORY PROPERTY ADDITIONAL_MAKE_CLEAN_FILES ${CMAKE_CURRENT_BINARY_DIR}/assets)
