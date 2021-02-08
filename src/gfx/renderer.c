@@ -296,10 +296,11 @@ void kcr_renderer_render(struct KCR_Renderer *renderer,
         struct KCR_Matrix4 rotationZ = kcr_mat4_rotation_z(instance->rotation.z);
 
         struct KCR_Matrix4 transform = kcr_mat4_identity();
-        transform = kcr_mat4_mult(&transform, &translation);
-        transform = kcr_mat4_mult(&transform, &rotationX);
-        transform = kcr_mat4_mult(&transform, &rotationY);
-        transform = kcr_mat4_mult(&transform, &rotationZ);
+        // scale goes here
+        transform = kcr_mat4_mult(&rotationZ, &transform);
+        transform = kcr_mat4_mult(&rotationY, &transform);
+        transform = kcr_mat4_mult(&rotationX, &transform);
+        transform = kcr_mat4_mult(&translation, &transform);
         
         for (size_t f = 0; f < kcr_list_length(instance->mesh->faceList); f++) {
             struct KCR_RenderTriangle* renderTriangle = &renderer->triangles[triangleIndex];
