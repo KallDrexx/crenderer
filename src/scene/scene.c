@@ -1,15 +1,17 @@
 #include <assert.h>
 #include "scene.h"
 #include "../list.h"
+#include "../math/angles.h"
 
 size_t meshIndex = 1;
 
 bool kcr_scene_init(struct KCR_Scene* scene) {
     assert(scene != NULL);
 
-    scene->cameraPosition.x = 0;
-    scene->cameraPosition.y = 0;
-    scene->cameraPosition.z = 0;
+    scene->camera = (struct KCR_Camera) {0};
+    scene->camera.zNear = 1.0f;
+    scene->camera.zFar = 100.0f;
+    scene->camera.fieldOfViewRadians = kcr_degrees_to_radians(60);
 
     scene->meshList = kcr_list_create(sizeof(struct KCR_Mesh));
     assert(scene->meshList != NULL);

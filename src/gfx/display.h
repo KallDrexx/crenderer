@@ -44,7 +44,8 @@ void kcr_display_finish_frame(struct KCR_Display* display);
  * Helper method to get the index on the pixel buffer for the specified x and y coordinate
  */
 static inline int kcr_display_get_pixel_index(const struct KCR_Display* display, int x, int y) {
-    return y * display->windowWidth + x;
+    // Invert since world space is +y goes up but in the canvas +y goes down.
+    return (display->windowHeight - 1 - y)  * display->windowWidth + x;
 }
 
 #endif //CRENDERER_DISPLAY_H

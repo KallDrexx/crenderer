@@ -77,10 +77,19 @@ static inline struct KCR_Vec4 kcr_vec4_from_vec3(const struct KCR_Vec3* vec3, fl
 }
 
 /*
- * Creates a 3 component vector from a 4 component vector, ignoring the y component
+ * Creates a 3 component vector from a 4 component vector, ignoring the w component
  */
 static inline struct KCR_Vec3 kcr_vec3_from_vec4(const struct KCR_Vec4* vec4) {
     struct KCR_Vec3 result = {vec4->x, vec4->y, vec4->z};
+    return result;
+}
+
+/*
+ * Creates a 2 component vector from a 4 component vector, ignoring the z and w components.
+ */
+static inline struct KCR_Vec2 kcr_vec2_from_vec4(const struct KCR_Vec4* vec4) {
+    struct KCR_Vec2 result = {vec4->x, vec4->y};
+
     return result;
 }
 

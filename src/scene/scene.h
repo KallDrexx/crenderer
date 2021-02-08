@@ -6,12 +6,22 @@
 #include "mesh.h"
 
 /*
+ * Represents a camera in the scene
+ */
+struct KCR_Camera {
+    struct KCR_Vec3 position;
+    float fieldOfViewRadians;
+    float zNear;
+    float zFar;
+};
+
+/*
  * Structure representing all objects in the scene, including the camera.
  */
 struct KCR_Scene {
     struct KCR_Mesh* meshList;
     struct KCR_MeshInstance* instanceList;
-    struct KCR_Vec3 cameraPosition;
+    struct KCR_Camera camera;
 };
 
 /*

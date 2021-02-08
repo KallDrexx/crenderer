@@ -49,23 +49,15 @@ struct KCR_Vec3 kcr_mat4_vec3_mult(const struct KCR_Matrix4* matrix, const struc
 }
 
 struct KCR_Matrix4 kcr_mat4_mult(const struct KCR_Matrix4 *m1, const struct KCR_Matrix4 *m2) {
-    struct KCR_Matrix4 result;
-    result.m[0][0] = m1->m[0][0] * m2->m[0][0] + m1->m[0][1] * m2->m[1][0] + m1->m[0][2] * m2->m[2][0] + m1->m[0][3] * m2->m[3][0];
-    result.m[0][1] = m1->m[0][0] * m2->m[0][1] + m1->m[0][1] * m2->m[1][1] + m1->m[0][2] * m2->m[2][1] + m1->m[0][3] * m2->m[3][1];
-    result.m[0][2] = m1->m[0][0] * m2->m[0][2] + m1->m[0][1] * m2->m[1][2] + m1->m[0][2] * m2->m[2][2] + m1->m[0][3] * m2->m[3][2];
-    result.m[0][3] = m1->m[0][0] * m2->m[0][3] + m1->m[0][1] * m2->m[1][3] + m1->m[0][2] * m2->m[2][3] + m1->m[0][3] * m2->m[3][3];
-    result.m[1][0] = m1->m[1][0] * m2->m[0][0] + m1->m[1][1] * m2->m[1][0] + m1->m[1][2] * m2->m[2][0] + m1->m[1][3] * m2->m[3][0];
-    result.m[1][1] = m1->m[1][0] * m2->m[0][1] + m1->m[1][1] * m2->m[1][1] + m1->m[1][2] * m2->m[2][1] + m1->m[1][3] * m2->m[3][1];
-    result.m[1][2] = m1->m[1][0] * m2->m[0][2] + m1->m[1][1] * m2->m[1][2] + m1->m[1][2] * m2->m[2][2] + m1->m[1][3] * m2->m[3][2];
-    result.m[1][3] = m1->m[1][0] * m2->m[0][3] + m1->m[1][1] * m2->m[1][3] + m1->m[1][2] * m2->m[2][3] + m1->m[1][3] * m2->m[3][3];
-    result.m[2][0] = m1->m[2][0] * m2->m[0][0] + m1->m[2][1] * m2->m[1][0] + m1->m[2][2] * m2->m[2][0] + m1->m[2][3] * m2->m[3][0];
-    result.m[2][1] = m1->m[2][0] * m2->m[0][1] + m1->m[2][1] * m2->m[1][1] + m1->m[2][2] * m2->m[2][1] + m1->m[2][3] * m2->m[3][1];
-    result.m[2][2] = m1->m[2][0] * m2->m[0][2] + m1->m[2][1] * m2->m[1][2] + m1->m[2][2] * m2->m[2][2] + m1->m[2][3] * m2->m[3][2];
-    result.m[2][3] = m1->m[2][0] * m2->m[0][3] + m1->m[2][1] * m2->m[1][3] + m1->m[2][2] * m2->m[2][3] + m1->m[2][3] * m2->m[3][3];
-    result.m[3][0] = m1->m[3][0] * m2->m[0][0] + m1->m[3][1] * m2->m[1][0] + m1->m[3][2] * m2->m[2][0] + m1->m[3][3] * m2->m[3][0];
-    result.m[3][1] = m1->m[3][0] * m2->m[0][1] + m1->m[3][1] * m2->m[1][1] + m1->m[3][2] * m2->m[2][1] + m1->m[3][3] * m2->m[3][1];
-    result.m[3][2] = m1->m[3][0] * m2->m[0][2] + m1->m[3][1] * m2->m[1][2] + m1->m[3][2] * m2->m[2][2] + m1->m[3][3] * m2->m[3][2];
-    result.m[3][3] = m1->m[3][0] * m2->m[0][3] + m1->m[3][1] * m2->m[1][3] + m1->m[3][2] * m2->m[2][3] + m1->m[3][3] * m2->m[3][3];
+    struct KCR_Matrix4 result = {0};
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            result.m[i][j] = m1->m[i][0] * m2->m[0][j] +
+                             m1->m[i][1] * m2->m[1][j] +
+                             m1->m[i][2] * m2->m[2][j] +
+                             m1->m[i][3] * m2->m[3][j];
+        }
+    }
 
     return result;
 }
@@ -96,6 +88,24 @@ struct KCR_Matrix4 kcr_mat4_rotation_z(float angleInRadians) {
     matrix.m[0][1] = -sinf(angleInRadians);
     matrix.m[1][0] = sinf(angleInRadians);
     matrix.m[1][1] = cosf(angleInRadians);
+
+    return matrix;
+}
+
+struct KCR_Matrix4 kcr_mat4_perspective(float fieldOfView, float aspectRatio, float zNear, float zFar) {
+    struct KCR_Matrix4 matrix = kcr_mat4_identity();
+    float fovFactor = 1 / tanf(fieldOfView / 2);
+    float depthRatio = zFar / (zFar - zNear);
+    float depthOffset = -(zFar * zNear) / (zFar - zNear);
+
+    matrix.m[0][0] = aspectRatio * fovFactor;
+    matrix.m[1][1] = fovFactor;
+    matrix.m[2][2] = depthRatio;
+    matrix.m[2][3] = depthOffset;
+    matrix.m[3][3] = 0.0f;
+
+    // Store 1 in the [3][2] to store the un-normalized z value in the w component of the vec4 result.
+    matrix.m[3][2] = 1.0f;
 
     return matrix;
 }
