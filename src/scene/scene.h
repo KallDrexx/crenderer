@@ -16,12 +16,20 @@ struct KCR_Camera {
 };
 
 /*
+ * Global illumination light
+ */
+struct KCR_GlobalLight {
+    struct KCR_Vec3 direction;
+};
+
+/*
  * Structure representing all objects in the scene, including the camera.
  */
 struct KCR_Scene {
     struct KCR_Mesh* meshList;
     struct KCR_MeshInstance* instanceList;
     struct KCR_Camera camera;
+    struct KCR_GlobalLight globalLight;
 };
 
 /*

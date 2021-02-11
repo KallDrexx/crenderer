@@ -12,6 +12,7 @@ struct KCR_RenderSettings {
     bool showSolidFaces : 1;
     bool showWireframe : 1;
     bool enableBackFaceCulling : 1;
+    bool enableLighting : 1;
 };
 
 struct KCR_RenderTriangle {

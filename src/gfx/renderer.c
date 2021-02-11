@@ -141,6 +141,7 @@ void update_render_mode(struct KCR_Renderer *renderer, const struct KCR_InputSta
         !inputState->two_pressed &&
         !inputState->three_pressed &&
         !inputState->four_pressed &&
+        !inputState->five_pressed &&
         !inputState->c_pressed) {
         return;
     }
@@ -148,25 +149,36 @@ void update_render_mode(struct KCR_Renderer *renderer, const struct KCR_InputSta
     if (inputState->one_pressed) {
         renderer->renderMode.showSolidFaces = false;
         renderer->renderMode.showVertices = false;
+        renderer->renderMode.enableLighting = false;
         renderer->renderMode.showWireframe = true;
     }
 
     if (inputState->two_pressed) {
         renderer->renderMode.showSolidFaces = false;
+        renderer->renderMode.enableLighting = false;
         renderer->renderMode.showVertices = true;
         renderer->renderMode.showWireframe = true;
     }
 
     if (inputState->three_pressed) {
-        renderer->renderMode.showSolidFaces = true;
+        renderer->renderMode.enableLighting = false;
         renderer->renderMode.showVertices = false;
         renderer->renderMode.showWireframe = false;
+        renderer->renderMode.showSolidFaces = true;
     }
 
     if (inputState->four_pressed) {
+        renderer->renderMode.enableLighting = false;
         renderer->renderMode.showVertices = false;
         renderer->renderMode.showSolidFaces = true;
         renderer->renderMode.showWireframe = true;
+    }
+
+    if (inputState->five_pressed) {
+        renderer->renderMode.showVertices = false;
+        renderer->renderMode.showWireframe = false;
+        renderer->renderMode.showSolidFaces = true;
+        renderer->renderMode.enableLighting = true;
     }
 
     if (inputState->c_pressed) {
@@ -238,6 +250,21 @@ int sort_triangle_function(const void* a, const void* b) {
     return 0;
 }
 
+/*
+ * Gets the value of a color when multiplied by a value.
+ */
+uint32_t modify_color(uint32_t original, float multiplier) {
+    assert(multiplier >= 0);
+    assert(multiplier <= 1.0f);
+
+    uint32_t a = 0xFF000000;
+    uint32_t r = (original & 0x00FF0000) * multiplier; // NOLINT(cppcoreguidelines-narrowing-conversions)
+    uint32_t g = (original & 0x0000FF00) * multiplier; // NOLINT(cppcoreguidelines-narrowing-conversions)
+    uint32_t b = (original & 0x000000FF) * multiplier; // NOLINT(cppcoreguidelines-narrowing-conversions)
+
+    return a | (r & 0x00FF0000) | (g & 0x0000FF00) | (b & 0x000000FF);
+}
+
 bool kcr_renderer_init(struct KCR_Renderer *renderer, const struct KCR_Display *display) {
     assert(renderer != NULL);
     assert(display != NULL);
@@ -261,6 +288,8 @@ void kcr_renderer_uninit(struct KCR_Renderer *renderer) {
 void kcr_renderer_render(struct KCR_Renderer *renderer,
                          const struct KCR_Scene *scene,
                          const struct KCR_InputState *inputState) {
+    #define MIN_LIGHT -0.1f
+
     assert(renderer != NULL);
     assert(renderer->display != NULL);
     assert(scene != NULL);
@@ -314,17 +343,29 @@ void kcr_renderer_render(struct KCR_Renderer *renderer,
     qsort(renderer->triangles, triangleCount, sizeof(struct KCR_RenderTriangle), sort_triangle_function);
 
     for (triangleIndex = 0; triangleIndex < triangleCount; triangleIndex++) {
-        const struct KCR_RenderTriangle* triangle = &renderer->triangles[triangleIndex];
+        struct KCR_RenderTriangle* triangle = &renderer->triangles[triangleIndex];
 
         const struct KCR_Vec3 v1 = kcr_vec3_sub(&triangle->v2, &triangle->v1);
         const struct KCR_Vec3 v2 = kcr_vec3_sub(&triangle->v3, &triangle->v1);
         const struct KCR_Vec3 normal = kcr_vec3_cross(&v1, &v2);
         const struct KCR_Vec3 vertexToCameraVector = kcr_vec3_sub(&triangle->v1, &scene->camera.position);
-        const float alignment = kcr_vec3_dot(&normal, &vertexToCameraVector);
+        const float vertexCameraAlignment = kcr_vec3_dot(&normal, &vertexToCameraVector);
 
-        if (!renderer->renderMode.enableBackFaceCulling || alignment > 0) {
+        if (!renderer->renderMode.enableBackFaceCulling || vertexCameraAlignment > 0) {
             // Since the normal is pointing in generally the same direction as the vector of the face to the camera
-            // then the face is facing towards the camera, and we need to cull.
+            // then the face is facing towards the camera, and we need to render it
+
+            if (renderer->renderMode.enableLighting) {
+                const struct KCR_Vec3 unitNormal = kcr_vec3_normalize(&normal);
+                float lightFaceAlignment = kcr_vec3_dot(&unitNormal, &scene->globalLight.direction);
+
+                if (lightFaceAlignment > MIN_LIGHT) {
+                    lightFaceAlignment = MIN_LIGHT;
+                }
+
+                triangle->color = modify_color(0xFFFFFFFF, -lightFaceAlignment);
+            }
+
             render_face(renderer->display, triangle, &renderer->renderMode, &projectionMatrix);
         }
     }
