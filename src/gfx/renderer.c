@@ -113,9 +113,9 @@ void adjust_to_screen_space(const struct KCR_Display* display, struct KCR_Vec2* 
     float centerHeight = (float) display->windowHeight / 2.0f;
 
     point->x *= centerWidth;
-    point->y *= centerHeight;
-
     point->x += centerWidth;
+
+    point->y *= -centerHeight; // invert for canvas
     point->y += centerHeight;
 }
 
@@ -288,7 +288,6 @@ void kcr_renderer_uninit(struct KCR_Renderer *renderer) {
 void kcr_renderer_render(struct KCR_Renderer *renderer,
                          const struct KCR_Scene *scene,
                          const struct KCR_InputState *inputState) {
-    #define MIN_LIGHT -0.1f
 
     assert(renderer != NULL);
     assert(renderer->display != NULL);
@@ -359,11 +358,12 @@ void kcr_renderer_render(struct KCR_Renderer *renderer,
                 const struct KCR_Vec3 unitNormal = kcr_vec3_normalize(&normal);
                 float lightFaceAlignment = kcr_vec3_dot(&unitNormal, &scene->globalLight.direction);
 
-                if (lightFaceAlignment > MIN_LIGHT) {
+                #define MIN_LIGHT 0.1f
+                if (lightFaceAlignment < MIN_LIGHT) {
                     lightFaceAlignment = MIN_LIGHT;
                 }
 
-                triangle->color = modify_color(0xFFFFFFFF, -lightFaceAlignment);
+                triangle->color = modify_color(0xFFFFFFFF, lightFaceAlignment);
             }
 
             render_face(renderer->display, triangle, &renderer->renderMode, &projectionMatrix);

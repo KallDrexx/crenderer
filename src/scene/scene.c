@@ -79,7 +79,7 @@ void kcr_scene_update(struct KCR_Scene* scene, const struct KCR_InputState* inpu
 
         if (inputState->left_mouse_down) {
             instance->rotation.y -= MOUSE_ROTATION_SPEED * inputState->mouse_drag_x;
-            instance->rotation.x -= MOUSE_ROTATION_SPEED * inputState->mouse_drag_y;
+            instance->rotation.x += MOUSE_ROTATION_SPEED * inputState->mouse_drag_y;
         }
 
         if (meshChanged) {
