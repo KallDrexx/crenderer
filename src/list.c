@@ -21,7 +21,7 @@ void* kcr_list_create(size_t itemSize) {
     return list->data;
 }
 
-void* kcr_list_new_items(void **list, size_t countToAdd) {
+void* kcr_list_new_items(void** list, size_t countToAdd) {
     assert(list != NULL);
     assert(*list != NULL);
 
@@ -60,14 +60,14 @@ void* kcr_list_new_items(void **list, size_t countToAdd) {
     return firstSlot;
 }
 
-void* kcr_list_new_item(void **list) {
+void* kcr_list_new_item(void** list) {
     assert(list != NULL);
     assert(*list != NULL);
 
     return kcr_list_new_items(list, 1);
 }
 
-size_t kcr_list_length(const void *list) {
+size_t kcr_list_length(const void* list) {
     if (list == NULL) {
         return 0;
     }
@@ -81,4 +81,9 @@ void kcr_list_free(void* list) {
         struct List* realList = (struct List*) ((char*)(list) - sizeof(struct List));
         free(realList);
     }
+}
+
+void kcr_list_clear(void* list) {
+    struct List* realList = (struct List*) ((char*)(list) - sizeof(struct List));
+    realList->length = 0;
 }

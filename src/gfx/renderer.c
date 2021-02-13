@@ -2,22 +2,27 @@
 #include <assert.h>
 #include <stdlib.h>
 #include "renderer.h"
+#include "triangle_renderer.h"
 #include "../list.h"
 
 #define SWAP(FIRST, SECOND, TYPE) do {TYPE SWAP = FIRST; FIRST = SECOND; SECOND = SWAP;} while(0)
 
-struct KCR_Vec4 perform_projection(const struct KCR_Matrix4* projection, const struct KCR_Vec3* vec3) {
-    struct KCR_Vec4 result = kcr_vec4_from_vec3(vec3, 1);
-    result = kcr_mat4_vec4_mult(projection, &result);
+/*
+ * Gets the value of a color when multiplied by a value.
+ */
+uint32_t modify_color(uint32_t original, float multiplier) {
+    assert(multiplier >= 0);
+    assert(multiplier <= 1.0f);
 
-    // perspective divide
-    if (result.w != 0) {
-        result.x /= result.w;
-        result.y /= result.w;
-    }
+    uint32_t a = 0xFF000000;
+    uint32_t r = (original & 0x00FF0000) * multiplier; // NOLINT(cppcoreguidelines-narrowing-conversions)
+    uint32_t g = (original & 0x0000FF00) * multiplier; // NOLINT(cppcoreguidelines-narrowing-conversions)
+    uint32_t b = (original & 0x000000FF) * multiplier; // NOLINT(cppcoreguidelines-narrowing-conversions)
 
-    return result;
+    return a | (r & 0x00FF0000) | (g & 0x0000FF00) | (b & 0x000000FF);
 }
+
+
 
 static inline void draw_pixel(const struct KCR_Display* display, int x, int y, uint32_t color) {
     if (x >= 0 && x < display->windowWidth && y >= 0 && y < display->windowHeight) {
@@ -108,16 +113,7 @@ void draw_filled_triangle(const struct KCR_Display* display, const struct KCR_Ve
     }
 }
 
-void adjust_to_screen_space(const struct KCR_Display* display, struct KCR_Vec2* point) {
-    float centerWidth = (float) display->windowWidth / 2.0f;
-    float centerHeight = (float) display->windowHeight / 2.0f;
 
-    point->x *= centerWidth;
-    point->x += centerWidth;
-
-    point->y *= -centerHeight; // invert for canvas
-    point->y += centerHeight;
-}
 
 void transform_face(struct KCR_RenderTriangle* triangle,
                     const struct KCR_Face* face,
@@ -187,58 +183,11 @@ void update_render_mode(struct KCR_Renderer *renderer, const struct KCR_InputSta
 }
 
 void render_face(const struct KCR_Display* display,
-                 const struct KCR_RenderTriangle* face,
+                 const struct KCR_Scene* scene,
+                 struct KCR_RenderTriangle* triangle,
                  const struct KCR_RenderSettings* renderMode,
                  const struct KCR_Matrix4* projection) {
-
-    struct KCR_Vec4 projectedVector1 = perform_projection(projection, &face->v1);
-    struct KCR_Vec4 projectedVector2 = perform_projection(projection, &face->v2);
-    struct KCR_Vec4 projectedVector3 = perform_projection(projection, &face->v3);
-
-    struct KCR_Vec2 projectedPoint1 = kcr_vec2_from_vec4(&projectedVector1);
-    struct KCR_Vec2 projectedPoint2 = kcr_vec2_from_vec4(&projectedVector2);
-    struct KCR_Vec2 projectedPoint3 = kcr_vec2_from_vec4(&projectedVector3);
-
-    adjust_to_screen_space(display, &projectedPoint1);
-    adjust_to_screen_space(display, &projectedPoint2);
-    adjust_to_screen_space(display, &projectedPoint3);
-
-    if (renderMode->showSolidFaces) {
-        const struct KCR_Vec2* points[] = {&projectedPoint1, &projectedPoint2, &projectedPoint3};
-        draw_filled_triangle(display, points, face->color);
-    }
-
-    if (renderMode->showWireframe) {
-        uint32_t color = renderMode->showSolidFaces ? 0xFF000000 : 0xFFFFFFFF;
-        draw_line(display, (int) projectedPoint1.x, (int) projectedPoint1.y, (int) projectedPoint2.x, (int) projectedPoint2.y, color);
-        draw_line(display, (int) projectedPoint2.x, (int) projectedPoint2.y, (int) projectedPoint3.x, (int) projectedPoint3.y, color);
-        draw_line(display, (int) projectedPoint3.x, (int) projectedPoint3.y, (int) projectedPoint1.x, (int) projectedPoint1.y, color);
-    }
-
-    if (renderMode->showVertices) {
-        #define RECT_SIZE 4.0f
-        #define RECT_HALF_SIZE RECT_SIZE / 2
-        draw_rect(display,
-                  (int) (projectedPoint1.x - RECT_HALF_SIZE),
-                  (int) (projectedPoint1.y - RECT_HALF_SIZE),
-                  RECT_SIZE,
-                  RECT_SIZE,
-                  0xFFFF0000);
-
-        draw_rect(display,
-                  (int) (projectedPoint2.x - RECT_HALF_SIZE),
-                  (int) (projectedPoint2.y - RECT_HALF_SIZE),
-                  RECT_SIZE,
-                  RECT_SIZE,
-                  0xFFFF0000);
-
-        draw_rect(display,
-                  (int) (projectedPoint3.x - RECT_HALF_SIZE),
-                  (int) (projectedPoint3.y - RECT_HALF_SIZE),
-                  RECT_SIZE,
-                  RECT_SIZE,
-                  0xFFFF0000);
-    }
+    render_triangle(display, renderMode, triangle, &scene->globalLight, projection);
 }
 
 int sort_triangle_function(const void* a, const void* b) {
@@ -248,21 +197,6 @@ int sort_triangle_function(const void* a, const void* b) {
     if (depthB < depthA) return 1;
     if (depthB > depthA) return -1;
     return 0;
-}
-
-/*
- * Gets the value of a color when multiplied by a value.
- */
-uint32_t modify_color(uint32_t original, float multiplier) {
-    assert(multiplier >= 0);
-    assert(multiplier <= 1.0f);
-
-    uint32_t a = 0xFF000000;
-    uint32_t r = (original & 0x00FF0000) * multiplier; // NOLINT(cppcoreguidelines-narrowing-conversions)
-    uint32_t g = (original & 0x0000FF00) * multiplier; // NOLINT(cppcoreguidelines-narrowing-conversions)
-    uint32_t b = (original & 0x000000FF) * multiplier; // NOLINT(cppcoreguidelines-narrowing-conversions)
-
-    return a | (r & 0x00FF0000) | (g & 0x0000FF00) | (b & 0x000000FF);
 }
 
 bool kcr_renderer_init(struct KCR_Renderer *renderer, const struct KCR_Display *display) {
@@ -346,17 +280,18 @@ void kcr_renderer_render(struct KCR_Renderer *renderer,
 
         const struct KCR_Vec3 v1 = kcr_vec3_sub(&triangle->v2, &triangle->v1);
         const struct KCR_Vec3 v2 = kcr_vec3_sub(&triangle->v3, &triangle->v1);
-        const struct KCR_Vec3 normal = kcr_vec3_cross(&v1, &v2);
+        triangle->normalizedNormal = kcr_vec3_cross(&v1, &v2);
+        triangle->normalizedNormal = kcr_vec3_normalize(&triangle->normalizedNormal);
+
         const struct KCR_Vec3 vertexToCameraVector = kcr_vec3_sub(&triangle->v1, &scene->camera.position);
-        const float vertexCameraAlignment = kcr_vec3_dot(&normal, &vertexToCameraVector);
+        const float vertexCameraAlignment = kcr_vec3_dot(&triangle->normalizedNormal, &vertexToCameraVector);
 
         if (!renderer->renderMode.enableBackFaceCulling || vertexCameraAlignment > 0) {
             // Since the normal is pointing in generally the same direction as the vector of the face to the camera
             // then the face is facing towards the camera, and we need to render it
 
             if (renderer->renderMode.enableLighting) {
-                const struct KCR_Vec3 unitNormal = kcr_vec3_normalize(&normal);
-                float lightFaceAlignment = kcr_vec3_dot(&unitNormal, &scene->globalLight.direction);
+                float lightFaceAlignment = kcr_vec3_dot(&triangle->normalizedNormal, &scene->globalLight.direction);
 
                 #define MIN_LIGHT 0.1f
                 if (lightFaceAlignment < MIN_LIGHT) {
@@ -366,7 +301,7 @@ void kcr_renderer_render(struct KCR_Renderer *renderer,
                 triangle->color = modify_color(0xFFFFFFFF, lightFaceAlignment);
             }
 
-            render_face(renderer->display, triangle, &renderer->renderMode, &projectionMatrix);
+            render_face(renderer->display, scene, triangle, &renderer->renderMode, &projectionMatrix);
         }
     }
 }

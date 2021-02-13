@@ -3,25 +3,10 @@
 
 #include <stdbool.h>
 #include "display.h"
+#include "render_settings.h"
 #include "../scene/scene.h"
 #include "../scene/mesh.h"
 #include "../input.h"
-
-struct KCR_RenderSettings {
-    bool showVertices : 1;
-    bool showSolidFaces : 1;
-    bool showWireframe : 1;
-    bool enableBackFaceCulling : 1;
-    bool enableLighting : 1;
-};
-
-struct KCR_RenderTriangle {
-    struct KCR_Vec3 v1;
-    struct KCR_Vec3 v2;
-    struct KCR_Vec3 v3;
-    uint32_t color;
-    float averageDepth;
-};
 
 /*
  * Represents the state of the renderer

@@ -4,6 +4,7 @@
 #include "../gfx/display.h"
 #include "../input.h"
 #include "mesh.h"
+#include "lighting.h"
 
 /*
  * Represents a camera in the scene
@@ -13,13 +14,6 @@ struct KCR_Camera {
     float fieldOfViewRadians;
     float zNear;
     float zFar;
-};
-
-/*
- * Global illumination light
- */
-struct KCR_GlobalLight {
-    struct KCR_Vec3 direction;
 };
 
 /*

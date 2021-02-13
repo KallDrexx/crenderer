@@ -29,6 +29,12 @@ void* kcr_list_new_items(void** list, size_t countToAdd);
 size_t kcr_list_length(const void* list);
 
 /*
+ * Sets the length of the list to zero while keeping its capacity the same.  Does not zero
+ * out memory.
+ */
+void kcr_list_clear(void* list);
+
+/*
  * Will free the memory allocated by the list, including all memory occupied by items contained
  * within the list.  If items contain their own pointers to other m, freeing those must be
  * done prior to freeing the list, otherwise memory leaks will occur.
