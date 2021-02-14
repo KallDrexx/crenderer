@@ -103,7 +103,7 @@ struct KCR_Vec2 adjust_to_screen_space(const struct KCR_Display* display, struct
     float centerWidth = (float) display->windowWidth / 2.0f;
     float centerHeight = (float) display->windowHeight / 2.0f;
 
-    point.x *= centerWidth;
+    point.x *= -centerWidth; // I'm not quite sure why the x axis is flipped
     point.x += centerWidth;
 
     point.y *= -centerHeight; // invert for canvas
@@ -149,7 +149,6 @@ void render_triangle(const struct KCR_Display* display,
 
     struct KCR_Vec2 points[3] = {projectedPoint1, projectedPoint2, projectedPoint3};
 
-    // Get top to bottom indexes using screen coordinates (topleft = 0,0, y increases as going down
     int topIndex = 0,
             midIndex = 1,
             bottomIndex = 2;
