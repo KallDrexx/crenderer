@@ -12,9 +12,9 @@ void transform_face(struct KCR_RenderTriangle* triangle,
                     const struct KCR_Mesh* mesh,
                     const struct KCR_Matrix4* transform) {
 
-    triangle->v1 = mesh->vertexList[face->vertexIndex1];
-    triangle->v2 = mesh->vertexList[face->vertexIndex2];
-    triangle->v3 = mesh->vertexList[face->vertexIndex3];
+    triangle->v1 = mesh->vertexList[face->v1.positionIndex];
+    triangle->v2 = mesh->vertexList[face->v2.positionIndex];
+    triangle->v3 = mesh->vertexList[face->v3.positionIndex];
     triangle->color = face->color;
 
     triangle->v1 = kcr_mat4_vec3_mult(transform, &triangle->v1);
@@ -116,13 +116,14 @@ void kcr_renderer_render(struct KCR_Renderer *renderer,
     size_t triangleIndex = 0;
     for (size_t i = 0; i < kcr_list_length(scene->instanceList); i++) {
         struct KCR_MeshInstance* instance = &scene->instanceList[i];
+        struct KCR_Matrix4 scale = kcr_mat4_scale(instance->scale.x, instance->scale.y, instance->scale.z);
         struct KCR_Matrix4 translation = kcr_mat4_translate(instance->position.x, instance->position.y, instance->position.z);
         struct KCR_Matrix4 rotationX = kcr_mat4_rotation_x(instance->rotation.x);
         struct KCR_Matrix4 rotationY = kcr_mat4_rotation_y(instance->rotation.y);
         struct KCR_Matrix4 rotationZ = kcr_mat4_rotation_z(instance->rotation.z);
 
         struct KCR_Matrix4 transform = kcr_mat4_identity();
-        // scale goes here
+        transform = kcr_mat4_mult(&scale, &transform);
         transform = kcr_mat4_mult(&rotationZ, &transform);
         transform = kcr_mat4_mult(&rotationY, &transform);
         transform = kcr_mat4_mult(&rotationX, &transform);

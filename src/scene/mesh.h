@@ -8,22 +8,34 @@
 #include "../math/matrix.h"
 
 /*
+ * Represents information about a single vertex within a mesh.  All indices are zero based, and dependent on their
+ * position in the owning mesh's lists.
+ */
+struct KCR_Vertex {
+    int positionIndex;
+    int normalIndex;
+    int textureIndex;
+};
+
+/*
  * Structure representing a face of a triangle, with the indexes to the vertex.  Faces are assumed to be
  * declared with a clockwise ordering.
  */
 struct KCR_Face {
-    int vertexIndex1;
-    int vertexIndex2;
-    int vertexIndex3;
+    struct KCR_Vertex v1;
+    struct KCR_Vertex v2;
+    struct KCR_Vertex v3;
     uint32_t color;
 };
 
 /*
- * Represents a 3d object, containing all individual vertices and triangle faces its made up of
+ * Represents a 3d object, containing various aspects needed for rendering a mesh.
  */
 struct KCR_Mesh {
     struct KCR_Vec3* vertexList;
     struct KCR_Face* faceList;
+    struct KCR_Vec3* normalList;
+    struct KCR_Vec2* textureCoordsList;
 };
 
 /*
@@ -34,6 +46,7 @@ struct KCR_MeshInstance {
     struct KCR_Mesh* mesh;
     struct KCR_Vec3 position;
     struct KCR_Vec3 rotation;
+    struct KCR_Vec3 scale;
 };
 
 /*
@@ -55,6 +68,6 @@ bool kcr_mesh_instance_init(struct KCR_MeshInstance* instance, struct KCR_Mesh* 
  * Un-initializes a mesh instance.  This will not deallocate the mesh the instance is pointing to
  * in case multiple instances are using the same mesh.  The instance itself will not be deallocated
  */
-__attribute__((unused)) void kcr_mesh_instance_uninit(__attribute__((unused)) struct KCR_MeshInstance* instance);
+void kcr_mesh_instance_uninit(struct KCR_MeshInstance* instance);
 
 #endif //CRENDERER_MESH_H

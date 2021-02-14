@@ -26,6 +26,9 @@ bool kcr_mesh_from_obj_file(struct KCR_Mesh* mesh, char* filename) {
 
     struct KCR_Vec3* vertexList = kcr_list_create(sizeof(struct KCR_Vec3));
     struct KCR_Face* faceList = kcr_list_create(sizeof(struct KCR_Face));
+    struct KCR_Vec3* normalList = kcr_list_create(sizeof(struct KCR_Vec3));
+    struct KCR_Vec2* textureList = kcr_list_create(sizeof(struct KCR_Vec2));
+
     char buffer[BUFFER_SIZE];
     unsigned int line = 0;
 
@@ -40,7 +43,7 @@ bool kcr_mesh_from_obj_file(struct KCR_Mesh* mesh, char* filename) {
                 for (int x = 0; x < 3; x++) {
                     values[x] = strtof(start, &end);
                     if (start == end) {
-                        fprintf(stderr, "Line %i has vertex m in an unknown format.\n", line);
+                        fprintf(stderr, "Line %i has a vertex in an unknown format.\n", line);
                         goto nextLoop;
                     }
 
@@ -50,7 +53,53 @@ bool kcr_mesh_from_obj_file(struct KCR_Mesh* mesh, char* filename) {
                 struct KCR_Vec3* vertex = kcr_list_new_item((void**) &vertexList);
                 vertex->x = values[0];
                 vertex->y = values[1];
-                vertex->z = values[2];\
+                vertex->z = values[2];
+            }
+
+            else if (strncmp(buffer, "vn", 2) == 0) {
+                // normal definition
+                char* start = buffer + 2;
+                char* end;
+                float values[3];
+                for (int x = 0; x < 3; x++) {
+                    values[x] = strtof(start, &end);
+                    if (start == end) {
+                        fprintf(stderr, "Line %i has a normal in an unknown format.\n", line);
+                        goto nextLoop;
+                    }
+
+                    start = end;
+                }
+
+                // obj vertex normals are not guaranteed to be unit vectors, so lets precompute that ahead of time.
+                // Not sure non-unit normals are useful for us.
+                struct KCR_Vec3 temp = (struct KCR_Vec3) {values[0], values[1], values[2]};
+                temp = kcr_vec3_normalize(&temp);
+
+                struct KCR_Vec3* normal = kcr_list_new_item((void**) &normalList);
+                normal->x = temp.x;
+                normal->y = temp.y;
+                normal->z = temp.z;
+            }
+
+            else if (strncmp(buffer, "vt", 2) == 0) {
+                // Texture coordinates
+                char* start = buffer + 2;
+                char* end;
+                float values[2];
+                for (int x = 0; x < 2; x++) {
+                    values[x] = strtof(start, &end);
+                    if (start == end) {
+                        fprintf(stderr, "Line %i has texture coordinates in an unknown format.\n", line);
+                        goto nextLoop;
+                    }
+
+                    start = end;
+                }
+
+                struct KCR_Vec2* texture = kcr_list_new_item((void**) &textureList);
+                texture->x = values[0];
+                texture->y = values[1];
             }
 
             else if (strncmp(buffer, "f ", 2) == 0) {
@@ -58,24 +107,24 @@ bool kcr_mesh_from_obj_file(struct KCR_Mesh* mesh, char* filename) {
                 char* start = buffer + 1;
                 char* end;
                 int readCount = 0;
-                int* indices = kcr_list_create(sizeof(int));
+                struct KCR_Vertex* vertices = kcr_list_create(sizeof(struct KCR_Vertex));
                 while(1) {
                     int value = strtol(start, &end, 10);
                     if (start == end) {
-                        size_t length = kcr_list_length(indices);
+                        size_t length = kcr_list_length(vertices);
                         if (length >= 3) {
-                            for (size_t i = 0; i < length - 1; i += 2) {
-                                int v1 = indices[i % length];
-                                int v2 = indices[(i + 1) % length];
-                                int v3 = indices[(i + 2) % length];
+                            for (size_t i = 0; i < length - 1; i += 2) { // +2 to properly deal with quads
+                                struct KCR_Vertex v1 = vertices[i % length];
+                                struct KCR_Vertex v2 = vertices[(i + 1) % length];
+                                struct KCR_Vertex v3 = vertices[(i + 2) % length];
 
                                 struct KCR_Face* face = kcr_list_new_item((void**) &faceList);
 
                                 // OBJ files lists them listed in CCW, but right now our engine uses cw.  OBJ files also
                                 // use 1 based indexing, but we obviously use zero based indexing
-                                face->vertexIndex1 = v3 - 1;
-                                face->vertexIndex2 = v2 - 1;
-                                face->vertexIndex3 = v1 - 1;
+                                face->v1 = v3;
+                                face->v2 = v2;
+                                face->v3 = v1;
                                 face->color = colors[(line + i) % COLOR_COUNT];
                             }
                         } else {
@@ -86,21 +135,49 @@ bool kcr_mesh_from_obj_file(struct KCR_Mesh* mesh, char* filename) {
                     }
 
                     if (value <= 0 || value > (int) kcr_list_length(vertexList)) {
-                        fprintf(stderr, "Line %i has invalid face index of %i\n", line, indices[readCount]);
+                        fprintf(stderr, "Line %i has an invalid face vertex index of %i\n", line, value);
                         break;
                     }
 
-                    kcr_list_new_item((void**) &indices);
-                    indices[readCount] = value;
+                    struct KCR_Vertex* vertexDetails = kcr_list_new_item((void**) &vertices);
+                    vertexDetails->positionIndex = value - 1; // change from 1 to 0 based indexes
+                    vertexDetails->normalIndex = -1;
+                    vertexDetails->textureIndex = -1;
 
                     start = end;
-                    while (*start == '/') {
-                        strtof(start + 1, &end);
+                    if (*start == '/') {
+                        // vertex texture
+                        value = strtol(start + 1, &end, 10);
+                        if (value != 0) {
+                            if (value > (int) kcr_list_length(textureList)) {
+                                fprintf(stderr, "Line %i has an invalid face texture index of %i\n", line, value);
+                                break;
+                            }
+
+                            vertexDetails->normalIndex = value - 1; // change from 1 to 0 based indexes
+                        }
+
                         start = end;
+                        if (*start == '/') {
+                            // vertex normal
+                            value = strtol(start + 1, &end, 10);
+                            if (value != 0) {
+                                if (value > (int) kcr_list_length(normalList)) {
+                                    fprintf(stderr, "Line %i has an invalid face normal index of %i\n", line, value);
+                                    break;
+                                }
+
+                                vertexDetails->textureIndex = value - 1; // change from 1 to 0 based indexes
+                            }
+
+                            start = end;
+                        }
                     }
+
                     readCount++;
                 }
-                kcr_list_free(indices);
+
+                kcr_list_free(vertices);
             }
         }
 
@@ -110,6 +187,8 @@ bool kcr_mesh_from_obj_file(struct KCR_Mesh* mesh, char* filename) {
 
     mesh->vertexList = vertexList;
     mesh->faceList = faceList;
+    mesh->textureCoordsList = textureList;
+    mesh->normalList = normalList;
 
     fclose(file);
 
@@ -120,9 +199,13 @@ void kcr_mesh_uninit(struct KCR_Mesh *mesh) {
     if (mesh != NULL) {
         kcr_list_free(mesh->faceList);
         kcr_list_free(mesh->vertexList);
+        kcr_list_free(mesh->textureCoordsList);
+        kcr_list_free(mesh->normalList);
 
         mesh->faceList = NULL;
         mesh->vertexList = NULL;
+        mesh->textureCoordsList = NULL;
+        mesh->normalList = NULL;
     }
 }
 
@@ -133,9 +216,11 @@ bool kcr_mesh_instance_init(struct KCR_MeshInstance* instance, struct KCR_Mesh *
     instance->mesh = mesh;
     instance->position = (struct KCR_Vec3){0};
     instance->rotation = (struct KCR_Vec3){0};
+    instance->scale = (struct KCR_Vec3) {1.0f, 1.0f, 1.0f};
 
     return true;
 }
 
-__attribute__((unused)) void kcr_mesh_instance_uninit(__attribute__((unused)) struct KCR_MeshInstance* instance) {
+void kcr_mesh_instance_uninit(struct KCR_MeshInstance* instance) {
+    instance->mesh = NULL;
 }
