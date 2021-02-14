@@ -17,6 +17,21 @@ struct LineYPoint* topToMidPoints;
 struct LineYPoint* topToBottomPoints;
 struct LineYPoint* midToBottomPoints;
 
+/*
+ * Gets the value of a color when multiplied by a value.
+ */
+static inline uint32_t modify_color(uint32_t original, float multiplier) {
+    assert(multiplier >= 0);
+    assert(multiplier <= 1.0f);
+
+    uint32_t a = 0xFF000000;
+    uint32_t r = (original & 0x00FF0000) * multiplier; // NOLINT(cppcoreguidelines-narrowing-conversions)
+    uint32_t g = (original & 0x0000FF00) * multiplier; // NOLINT(cppcoreguidelines-narrowing-conversions)
+    uint32_t b = (original & 0x000000FF) * multiplier; // NOLINT(cppcoreguidelines-narrowing-conversions)
+
+    return a | (r & 0x00FF0000) | (g & 0x0000FF00) | (b & 0x000000FF);
+}
+
 static inline void draw_pixel(const struct KCR_Display* display, int x, int y, uint32_t color) {
     if (x >= 0 && x < display->windowWidth && y >= 0 && y < display->windowHeight) {
         int index = kcr_display_get_pixel_index(display, x, y);
@@ -114,41 +129,59 @@ struct KCR_Vec2 adjust_to_screen_space(const struct KCR_Display* display, struct
 
 void render_scanline(const struct KCR_Display* display,
         const struct KCR_RenderSettings* renderSettings,
+        const struct KCR_RenderTriangle* triangle,
+        const struct KCR_GlobalLight* globalLight,
         const struct LineYPoint lineLeft,
         const struct LineYPoint lineRight) {
 
-    for (int x = lineLeft.minX; x <= lineLeft.maxX; x++) {
-        draw_pixel(display, x, lineLeft.y, 0xFFFFFFFF);
+    if (lineLeft.minX > display->windowWidth || lineRight.maxX < 0) {
+        // Out of the window, so don't bother rendering
+        return;
     }
 
-    for (int x = lineRight.minX; x <= lineRight.maxX; x++) {
-        draw_pixel(display, x, lineRight.y, 0xFFFFFFFF);
+    if (renderSettings->showSolidFaces) {
+        int left = lineLeft.minX;
+        int right = lineRight.maxX;
+        if (left < 0) left = 0;
+        if (right > display->windowWidth) right = display->windowWidth;
+
+        if (renderSettings->enableLighting) {
+            uint32_t flatColor = 0xFFFFFFFF;
+            float lightFaceAlignment = kcr_vec3_dot(&globalLight->direction, &triangle->normalizedNormal);
+
+            #define MIN_LIGHT 0.1f
+            if (lightFaceAlignment < MIN_LIGHT) {
+                lightFaceAlignment = MIN_LIGHT;
+            }
+
+            flatColor = modify_color(flatColor, lightFaceAlignment);
+            for (int x = left; x <= right; x++) {
+                draw_pixel(display, x, lineLeft.y, flatColor);
+            }
+        }
+        else {
+            for (int x = left; x <= right; x++) {
+                draw_pixel(display, x, lineLeft.y, triangle->color);
+            }
+        }
+    }
+
+    if (renderSettings->showWireframe) {
+        uint32_t color = renderSettings->showSolidFaces ? 0xFF000000 : 0xFFFFFFFF;
+
+        for (int x = lineLeft.minX; x <= lineLeft.maxX; x++) {
+            draw_pixel(display, x, lineLeft.y, color);
+        }
+
+        for (int x = lineRight.minX; x <= lineRight.maxX; x++) {
+            draw_pixel(display, x, lineRight.y, color);
+        }
     }
 }
 
-void render_triangle(const struct KCR_Display* display,
-        const struct KCR_RenderSettings* renderSettings,
-        const struct KCR_RenderTriangle* triangle,
-        const struct KCR_GlobalLight* globalLight,
-        const struct KCR_Matrix4* projection) {
-    struct KCR_Vec4 projectedVector1 = perform_projection(projection, &triangle->v1);
-    struct KCR_Vec4 projectedVector2 = perform_projection(projection, &triangle->v2);
-    struct KCR_Vec4 projectedVector3 = perform_projection(projection, &triangle->v3);
-
-    struct KCR_Vec2 projectedPoint1 = adjust_to_screen_space(display, kcr_vec2_from_vec4(&projectedVector1));
-    struct KCR_Vec2 projectedPoint2 = adjust_to_screen_space(display, kcr_vec2_from_vec4(&projectedVector2));
-    struct KCR_Vec2 projectedPoint3 = adjust_to_screen_space(display, kcr_vec2_from_vec4(&projectedVector3));
-
-    // Ignore triangles outside screen boundaries
-    float maxY = (float) display->windowHeight;
-    float maxX = (float) display->windowWidth;
-    if (projectedPoint1.y < 0 && projectedPoint2.y < 0 && projectedPoint3.y < 0) return;
-    if (projectedPoint1.y > maxY && projectedPoint2.y > maxY && projectedPoint3.y > maxY) return;
-    if (projectedPoint1.x < 0 && projectedPoint2.x < 0 && projectedPoint3.x < 0) return;
-    if (projectedPoint1.x > maxX && projectedPoint2.x > maxX && projectedPoint3.x > maxX) return;
-
-    struct KCR_Vec2 points[3] = {projectedPoint1, projectedPoint2, projectedPoint3};
-
+void perform_render(const struct KCR_Display* display, const struct KCR_RenderSettings *renderSettings,
+                    const struct KCR_RenderTriangle* triangle, const struct KCR_GlobalLight *globalLight,
+                    const struct KCR_Vec2 points[3]) {
     int topIndex = 0,
             midIndex = 1,
             bottomIndex = 2;
@@ -187,7 +220,7 @@ void render_triangle(const struct KCR_Display* display,
         assert(left.y == y);
         assert(right.y == y);
 
-        render_scanline(display, renderSettings, left, right);
+        render_scanline(display, renderSettings, triangle, globalLight, left, right);
 
         if (!reachedMidPoint && topToMidIndex >= topToMidCount - 1) {
             reachedMidPoint = true;
@@ -206,4 +239,43 @@ void render_triangle(const struct KCR_Display* display,
             topToMidIndex++;
         }
     }
+
+    if (renderSettings->showVertices) {
+        for (int i = 0; i < 3; i++) {
+            #define RECT_SIZE 6.0f
+            #define HALF_RECT RECT_SIZE / 2
+
+            for (int x = (int)(points[i].x - HALF_RECT); x < (int)(points[i].x + HALF_RECT); x++) {
+                for (int y = (int)(points[i].y - HALF_RECT); y < (int)(points[i].y + HALF_RECT); y++) {
+                    draw_pixel(display, x, y, 0xFFFF0000);
+                }
+            }
+        }
+    }
+}
+
+void render_triangle(const struct KCR_Display* display,
+                     const struct KCR_RenderSettings* renderSettings,
+                     const struct KCR_RenderTriangle* triangle,
+                     const struct KCR_GlobalLight* globalLight,
+                     const struct KCR_Matrix4* projection) {
+    struct KCR_Vec4 projectedVector1 = perform_projection(projection, &triangle->v1);
+    struct KCR_Vec4 projectedVector2 = perform_projection(projection, &triangle->v2);
+    struct KCR_Vec4 projectedVector3 = perform_projection(projection, &triangle->v3);
+
+    struct KCR_Vec2 projectedPoint1 = adjust_to_screen_space(display, kcr_vec2_from_vec4(&projectedVector1));
+    struct KCR_Vec2 projectedPoint2 = adjust_to_screen_space(display, kcr_vec2_from_vec4(&projectedVector2));
+    struct KCR_Vec2 projectedPoint3 = adjust_to_screen_space(display, kcr_vec2_from_vec4(&projectedVector3));
+
+    // Ignore triangles outside screen boundaries
+    float maxY = (float) display->windowHeight;
+    float maxX = (float) display->windowWidth;
+    if (projectedPoint1.y < 0 && projectedPoint2.y < 0 && projectedPoint3.y < 0) return;
+    if (projectedPoint1.y > maxY && projectedPoint2.y > maxY && projectedPoint3.y > maxY) return;
+    if (projectedPoint1.x < 0 && projectedPoint2.x < 0 && projectedPoint3.x < 0) return;
+    if (projectedPoint1.x > maxX && projectedPoint2.x > maxX && projectedPoint3.x > maxX) return;
+
+    struct KCR_Vec2 points[3] = {projectedPoint1, projectedPoint2, projectedPoint3};
+
+    perform_render(display, renderSettings, triangle, globalLight, points);
 }
