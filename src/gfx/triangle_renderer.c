@@ -145,23 +145,28 @@ void render_scanline(const struct KCR_Display* display,
         if (left < 0) left = 0;
         if (right > display->windowWidth) right = display->windowWidth;
 
-        if (renderSettings->enableLighting) {
-            uint32_t flatColor = 0xFFFFFFFF;
-            float lightFaceAlignment = kcr_vec3_dot(&globalLight->direction, &triangle->normalizedNormal);
+        switch (renderSettings->lightingMode) {
+            case LIGHTING_NONE: {
+                for (int x = left; x <= right; x++) {
+                    draw_pixel(display, x, lineLeft.y, triangle->color);
+                }
 
-            #define MIN_LIGHT 0.1f
-            if (lightFaceAlignment < MIN_LIGHT) {
-                lightFaceAlignment = MIN_LIGHT;
+                break;
             }
 
-            flatColor = modify_color(flatColor, lightFaceAlignment);
-            for (int x = left; x <= right; x++) {
-                draw_pixel(display, x, lineLeft.y, flatColor);
-            }
-        }
-        else {
-            for (int x = left; x <= right; x++) {
-                draw_pixel(display, x, lineLeft.y, triangle->color);
+            case LIGHTING_FLAT: {
+                uint32_t flatColor = 0xFFFFFFFF;
+                float lightFaceAlignment = kcr_vec3_dot(&globalLight->direction, &triangle->normalizedNormal);
+
+                #define MIN_LIGHT 0.1f
+                if (lightFaceAlignment < MIN_LIGHT) {
+                    lightFaceAlignment = MIN_LIGHT;
+                }
+
+                flatColor = modify_color(flatColor, lightFaceAlignment);
+                for (int x = left; x <= right; x++) {
+                    draw_pixel(display, x, lineLeft.y, flatColor);
+                }
             }
         }
     }

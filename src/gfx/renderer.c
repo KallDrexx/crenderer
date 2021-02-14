@@ -25,52 +25,32 @@ void transform_face(struct KCR_RenderTriangle* triangle,
 }
 
 void update_render_mode(struct KCR_Renderer *renderer, const struct KCR_InputState *inputState) {
-    if (!inputState->one_pressed &&
-        !inputState->two_pressed &&
-        !inputState->three_pressed &&
-        !inputState->four_pressed &&
-        !inputState->five_pressed &&
-        !inputState->c_pressed) {
-        return;
-    }
-
     if (inputState->one_pressed) {
-        renderer->renderMode.showSolidFaces = false;
-        renderer->renderMode.showVertices = false;
-        renderer->renderMode.enableLighting = false;
-        renderer->renderMode.showWireframe = true;
+        renderer->renderMode.showVertices = !renderer->renderMode.showVertices;
     }
 
     if (inputState->two_pressed) {
-        renderer->renderMode.showSolidFaces = false;
-        renderer->renderMode.enableLighting = false;
-        renderer->renderMode.showVertices = true;
-        renderer->renderMode.showWireframe = true;
+        renderer->renderMode.showWireframe = !renderer->renderMode.showWireframe;
     }
 
     if (inputState->three_pressed) {
-        renderer->renderMode.enableLighting = false;
-        renderer->renderMode.showVertices = false;
-        renderer->renderMode.showWireframe = false;
-        renderer->renderMode.showSolidFaces = true;
+        renderer->renderMode.showSolidFaces = !renderer->renderMode.showSolidFaces;
     }
 
     if (inputState->four_pressed) {
-        renderer->renderMode.enableLighting = false;
-        renderer->renderMode.showVertices = false;
-        renderer->renderMode.showSolidFaces = true;
+        switch(renderer->renderMode.lightingMode) {
+            case LIGHTING_NONE:
+                renderer->renderMode.lightingMode = LIGHTING_FLAT;
+                break;
+
+            case LIGHTING_FLAT:
+                renderer->renderMode.lightingMode = LIGHTING_NONE;
+                break;
+        }
+    }
+
+    if (!renderer->renderMode.showWireframe && !renderer->renderMode.showSolidFaces) {
         renderer->renderMode.showWireframe = true;
-    }
-
-    if (inputState->five_pressed) {
-        renderer->renderMode.showVertices = false;
-        renderer->renderMode.showWireframe = false;
-        renderer->renderMode.showSolidFaces = true;
-        renderer->renderMode.enableLighting = true;
-    }
-
-    if (inputState->c_pressed) {
-        renderer->renderMode.enableBackFaceCulling = !renderer->renderMode.enableBackFaceCulling;
     }
 }
 
