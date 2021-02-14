@@ -7,114 +7,6 @@
 
 #define SWAP(FIRST, SECOND, TYPE) do {TYPE SWAP = FIRST; FIRST = SECOND; SECOND = SWAP;} while(0)
 
-/*
- * Gets the value of a color when multiplied by a value.
- */
-uint32_t modify_color(uint32_t original, float multiplier) {
-    assert(multiplier >= 0);
-    assert(multiplier <= 1.0f);
-
-    uint32_t a = 0xFF000000;
-    uint32_t r = (original & 0x00FF0000) * multiplier; // NOLINT(cppcoreguidelines-narrowing-conversions)
-    uint32_t g = (original & 0x0000FF00) * multiplier; // NOLINT(cppcoreguidelines-narrowing-conversions)
-    uint32_t b = (original & 0x000000FF) * multiplier; // NOLINT(cppcoreguidelines-narrowing-conversions)
-
-    return a | (r & 0x00FF0000) | (g & 0x0000FF00) | (b & 0x000000FF);
-}
-
-
-
-static inline void draw_pixel(const struct KCR_Display* display, int x, int y, uint32_t color) {
-    if (x >= 0 && x < display->windowWidth && y >= 0 && y < display->windowHeight) {
-        int index = kcr_display_get_pixel_index(display, x, y);
-        display->pixelBuffer[index] = color;
-    }
-}
-
-void draw_rect(const struct KCR_Display* display, int x, int y, int width, int height, uint32_t color) {
-    for (int i = 0; i < width; i++) {
-        for (int j = 0; j < height; j++) {
-            draw_pixel(display, x + i, y + j, color);
-        }
-    }
-}
-
-void draw_line(const struct KCR_Display* display, int x1, int y1, int x2, int y2, uint32_t color) {
-    const int changeInY = y2 - y1;
-    const int changeInX = x2 - x1;
-    const int numberOfPoints = abs(changeInY) > abs(changeInX) ? abs(changeInY) : abs(changeInX);
-    const float xIncrement = (float) changeInX / (float) numberOfPoints;
-    const float yIncrement = (float) changeInY / (float) numberOfPoints;
-
-    float currentX = (float) x1;
-    float currentY = (float) y1;
-    for (int i = 0; i <= numberOfPoints; i++) {
-        draw_pixel(display, (int) roundf(currentX), (int) roundf(currentY), color);
-        currentX += xIncrement;
-        currentY += yIncrement;
-    }
-}
-
-void draw_filled_triangle(const struct KCR_Display* display, const struct KCR_Vec2* vertices[3], uint32_t color) {
-    // Get top to bottom indexes using screen coordinates (topleft = 0,0, y increases as going down
-    int topIndex = 0,
-        midIndex = 1,
-        bottomIndex = 2;
-
-    if (vertices[topIndex]->y > vertices[midIndex]->y) SWAP(topIndex, midIndex, int);
-    if (vertices[midIndex]->y > vertices[bottomIndex]->y) SWAP(midIndex, bottomIndex, int);
-    if (vertices[topIndex]->y > vertices[midIndex]->y) SWAP(topIndex, midIndex, int);
-
-    // Consider the triangle as 2 triangles split at the middle point, so they have consistent Y start and end values.
-    // Flat bottom triangle
-    if (vertices[topIndex]->y < vertices[midIndex]->y) { // Not a horizontal line from top to mid
-        float v01InverseSlope = (float)((int)vertices[midIndex]->x - (int)vertices[topIndex]->x) / (float)((int)vertices[midIndex]->y - (int)vertices[topIndex]->y);
-        float v02InverseSlope = (float)((int)vertices[bottomIndex]->x - (int)vertices[topIndex]->x) / (float)((int)vertices[bottomIndex]->y - (int)vertices[topIndex]->y);
-        float v01CurX = vertices[topIndex]->x;
-        float v02CurX = vertices[topIndex]->x;
-        for (int y = (int) vertices[topIndex]->y; y <= (int) vertices[midIndex]->y; y++) {
-            int leftX = (int) v01CurX;
-            int rightX = (int) v02CurX;
-            if (y > 0 && y < display->windowHeight) {
-                if (leftX > rightX) SWAP(leftX, rightX, int);
-                if (leftX < 0) leftX = 0;
-                if (rightX > display->windowWidth) rightX = display->windowWidth;
-                for (int x = leftX; x <= rightX; x++) {
-                    draw_pixel(display, x, y, color);
-                }
-            }
-
-            v01CurX += v01InverseSlope;
-            v02CurX += v02InverseSlope;
-        }
-    }
-
-    // flat top triangle
-    if (vertices[bottomIndex]->y > vertices[midIndex]->y) { // Not a horizontal line from bottom to mid
-        float v21InverseSlope = (float)((int)vertices[midIndex]->x - (int)vertices[bottomIndex]->x) / (float)((int)vertices[midIndex]->y - (int)vertices[bottomIndex]->y);
-        float v20InverseSlope = (float)((int)vertices[topIndex]->x - (int)vertices[bottomIndex]->x) / (float)((int)vertices[topIndex]->y - (int)vertices[bottomIndex]->y);
-        float v21CurX = vertices[bottomIndex]->x;
-        float v20CurX = vertices[bottomIndex]->x;
-        for (int y = (int) vertices[bottomIndex]->y; y > (int) vertices[midIndex]->y; y--) {
-            int leftX = (int) v21CurX;
-            int rightX = (int) v20CurX;
-            if (y > 0 && y < display->windowHeight) {
-                if (leftX > rightX) SWAP(leftX, rightX, int);
-                if (leftX < 0) leftX = 0;
-                if (rightX > display->windowWidth) rightX = display->windowWidth;
-                for (int x = leftX; x <= rightX; x++) {
-                    draw_pixel(display, x, y, color);
-                }
-            }
-
-            v21CurX -= v21InverseSlope;
-            v20CurX -= v20InverseSlope;
-        }
-    }
-}
-
-
-
 void transform_face(struct KCR_RenderTriangle* triangle,
                     const struct KCR_Face* face,
                     const struct KCR_Mesh* mesh,
@@ -180,14 +72,6 @@ void update_render_mode(struct KCR_Renderer *renderer, const struct KCR_InputSta
     if (inputState->c_pressed) {
         renderer->renderMode.enableBackFaceCulling = !renderer->renderMode.enableBackFaceCulling;
     }
-}
-
-void render_face(const struct KCR_Display* display,
-                 const struct KCR_Scene* scene,
-                 struct KCR_RenderTriangle* triangle,
-                 const struct KCR_RenderSettings* renderMode,
-                 const struct KCR_Matrix4* projection) {
-    render_triangle(display, renderMode, triangle, &scene->globalLight, projection);
 }
 
 int sort_triangle_function(const void* a, const void* b) {
@@ -290,18 +174,7 @@ void kcr_renderer_render(struct KCR_Renderer *renderer,
             // Since the normal is pointing in generally the same direction as the vector of the face to the camera
             // then the face is facing towards the camera, and we need to render it
 
-            if (renderer->renderMode.enableLighting) {
-                float lightFaceAlignment = kcr_vec3_dot(&triangle->normalizedNormal, &scene->globalLight.direction);
-
-                #define MIN_LIGHT 0.1f
-                if (lightFaceAlignment < MIN_LIGHT) {
-                    lightFaceAlignment = MIN_LIGHT;
-                }
-
-                triangle->color = modify_color(0xFFFFFFFF, lightFaceAlignment);
-            }
-
-            render_face(renderer->display, scene, triangle, &renderer->renderMode, &projectionMatrix);
+            render_triangle(renderer->display, &renderer->renderMode, triangle, &scene->globalLight, &projectionMatrix);
         }
     }
 }
