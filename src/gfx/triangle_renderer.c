@@ -12,6 +12,18 @@ struct LineYPoint {
     int maxX;
 };
 
+struct ScanLineRenderOperation {
+    const struct KCR_Display* display;
+    const struct KCR_RenderSettings* renderSettings;
+    struct LineYPoint lineLeft;
+    struct LineYPoint lineRight;
+    uint32_t defaultTriangleColor;
+    uint32_t flatColor;
+    int yCoord;
+    float leftLightAlignment;
+    float rightLightAlignment;
+};
+
 // Re-used point lists so we don't have to allocate every triangle
 struct LineYPoint* topToMidPoints;
 struct LineYPoint* topToBottomPoints;
@@ -20,8 +32,10 @@ struct LineYPoint* midToBottomPoints;
 /*
  * Gets the value of a color when multiplied by a value.
  */
-static inline uint32_t modify_color(uint32_t original, float multiplier) {
-    assert(multiplier >= 0);
+uint32_t modify_color(uint32_t original, float multiplier) {
+    assert(!isnan(multiplier));
+    assert(!isinf(multiplier));
+    assert(multiplier >= 0.0f);
     assert(multiplier <= 1.0f);
 
     uint32_t a = 0xFF000000;
@@ -32,11 +46,35 @@ static inline uint32_t modify_color(uint32_t original, float multiplier) {
     return a | (r & 0x00FF0000) | (g & 0x0000FF00) | (b & 0x000000FF);
 }
 
+static inline float getLightAlignment(const struct KCR_GlobalLight* light, const struct KCR_Vec3 unitVector) {
+    #define MIN_LIGHT 0.1f
+
+    float alignment = kcr_vec3_dot(&light->direction, &unitVector);
+
+    if (alignment < MIN_LIGHT) {
+        alignment = MIN_LIGHT;
+    }
+
+    return alignment;
+}
+
 static inline void draw_pixel(const struct KCR_Display* display, int x, int y, uint32_t color) {
     if (x >= 0 && x < display->windowWidth && y >= 0 && y < display->windowHeight) {
         int index = kcr_display_get_pixel_index(display, x, y);
         display->pixelBuffer[index] = color;
     }
+}
+
+/*
+ * Linear interpolation between two values
+ */
+static inline float interpolate(float first, float second, float percent) {
+    if (first < second) {
+        SWAP(first, second, float);
+        percent = 1 - percent;
+    }
+
+    return first - (first - second) * percent;
 }
 
 int sort_points(const void* a, const void* b) {
@@ -127,65 +165,66 @@ struct KCR_Vec2 adjust_to_screen_space(const struct KCR_Display* display, struct
     return point;
 }
 
-void render_scanline(const struct KCR_Display* display,
-        const struct KCR_RenderSettings* renderSettings,
-        const struct KCR_RenderTriangle* triangle,
-        const struct KCR_GlobalLight* globalLight,
-        const struct LineYPoint lineLeft,
-        const struct LineYPoint lineRight) {
-
-    if (lineLeft.minX > display->windowWidth || lineRight.maxX < 0) {
+void render_scanline(const struct ScanLineRenderOperation* renderOperation) {
+    if (renderOperation->lineLeft.minX > renderOperation->display->windowWidth || renderOperation->lineRight.maxX < 0) {
         // Out of the window, so don't bother rendering
         return;
     }
 
-    if (renderSettings->showSolidFaces) {
-        int left = lineLeft.minX;
-        int right = lineRight.maxX;
-        if (left < 0) left = 0;
-        if (right > display->windowWidth) right = display->windowWidth;
+    int left = renderOperation->lineLeft.minX;
+    int right = renderOperation->lineRight.maxX;
+    if (left < 0) left = 0;
+    if (right > renderOperation->display->windowWidth) right = renderOperation->display->windowWidth;
 
-        switch (renderSettings->lightingMode) {
-            case LIGHTING_NONE: {
-                for (int x = left; x <= right; x++) {
-                    draw_pixel(display, x, lineLeft.y, triangle->color);
-                }
+    for (int x = left; x <= right; x++) {
+        bool renderPixel = false;
+        uint32_t color = 0xFFFFFFFF;
 
-                break;
+        if (renderOperation->renderSettings->showWireframe) {
+            if ((x >= renderOperation->lineLeft.minX && x <= renderOperation->lineLeft.maxX) ||
+                (x >= renderOperation->lineRight.minX && x <= renderOperation->lineRight.maxX)) {
+                renderPixel = true;
+                color = renderOperation->renderSettings->showSolidFaces ? 0xFF000000 : 0xFFFFFFFF;
             }
+        }
 
-            case LIGHTING_FLAT: {
-                uint32_t flatColor = 0xFFFFFFFF;
-                float lightFaceAlignment = kcr_vec3_dot(&globalLight->direction, &triangle->normalizedNormal);
+        if (renderOperation->renderSettings->showSolidFaces && !renderPixel) {
+            renderPixel = true;
+            switch (renderOperation->renderSettings->lightingMode) {
+                case LIGHTING_NONE:
+                    color = renderOperation->defaultTriangleColor;
+                    break;
 
-                #define MIN_LIGHT 0.1f
-                if (lightFaceAlignment < MIN_LIGHT) {
-                    lightFaceAlignment = MIN_LIGHT;
-                }
+                case LIGHTING_FLAT:
+                    color = renderOperation->flatColor;
+                    break;
 
-                flatColor = modify_color(flatColor, lightFaceAlignment);
-                for (int x = left; x <= right; x++) {
-                    draw_pixel(display, x, lineLeft.y, flatColor);
+                case LIGHTING_SMOOTH: {
+                    float alignment;
+                    if (right == left) {
+                        alignment = renderOperation->leftLightAlignment;
+                    } else {
+                        float length = (float) (x - left) / (float) (right - left);
+                        alignment = interpolate(renderOperation->leftLightAlignment, renderOperation->rightLightAlignment, length);
+                    }
+
+                    color = modify_color(0xFFFFFFFF, alignment);
+
+                    break;
                 }
             }
         }
-    }
 
-    if (renderSettings->showWireframe) {
-        uint32_t color = renderSettings->showSolidFaces ? 0xFF000000 : 0xFFFFFFFF;
-
-        for (int x = lineLeft.minX; x <= lineLeft.maxX; x++) {
-            draw_pixel(display, x, lineLeft.y, color);
-        }
-
-        for (int x = lineRight.minX; x <= lineRight.maxX; x++) {
-            draw_pixel(display, x, lineRight.y, color);
+        if (renderPixel) {
+            draw_pixel(renderOperation->display, x, renderOperation->yCoord, color);
         }
     }
 }
 
-void perform_render(const struct KCR_Display* display, const struct KCR_RenderSettings *renderSettings,
-                    const struct KCR_RenderTriangle* triangle, const struct KCR_GlobalLight *globalLight,
+void perform_render(const struct KCR_Display* display,
+                    const struct KCR_RenderSettings *renderSettings,
+                    const struct KCR_RenderTriangle* triangle,
+                    const struct KCR_GlobalLight *globalLight,
                     const struct KCR_Vec2 points[3]) {
     int topIndex = 0,
             midIndex = 1,
@@ -203,6 +242,7 @@ void perform_render(const struct KCR_Display* display, const struct KCR_RenderSe
     size_t topToMidCount = kcr_list_length(topToMidPoints);
     size_t topToBottomCount = kcr_list_length(topToBottomPoints);
     size_t midToBottomCount = kcr_list_length(midToBottomPoints);
+
     assert(topToBottomCount >= 1);
     assert(topToMidCount <= topToBottomCount);
     assert(topToMidCount + midToBottomCount == topToBottomCount + 1); // +1 for overlap
@@ -214,18 +254,60 @@ void perform_render(const struct KCR_Display* display, const struct KCR_RenderSe
     size_t topToBottomIndex = 0;
     size_t midToBottomIndex = 0;
     bool reachedMidPoint = false;
+
+    float faceLightAlignment = getLightAlignment(globalLight, triangle->normalizedTriangleNormal);
+    float topAlignment = getLightAlignment(globalLight, triangle->vertexNormals[topIndex]);
+    float midAlignment = getLightAlignment(globalLight, triangle->vertexNormals[midIndex]);
+
+    float bottomAlignment = getLightAlignment(globalLight, triangle->vertexNormals[bottomIndex]);
+
+    uint32_t flatColor = modify_color(0xFFFFFFFF, faceLightAlignment);
+
+    struct ScanLineRenderOperation renderOp = {
+            .display = display,
+            .renderSettings = renderSettings,
+            .defaultTriangleColor = triangle->color,
+            .flatColor = flatColor,
+    };
+
     for (int y = startY; y <= endY; y++) {
         struct LineYPoint left = topToBottomPoints[topToBottomIndex];
         struct LineYPoint right = reachedMidPoint
                 ? midToBottomPoints[midToBottomIndex]
                 : topToMidPoints[topToMidIndex];
 
-        if (left.maxX > right.minX) SWAP(left, right, struct LineYPoint);
+        float leftAlignment;
+        float rightAlignment;
+        if (endY - startY > 0) {
+            leftAlignment = interpolate(topAlignment, bottomAlignment, (float) (y - startY) / (float) (endY - startY));
+        } else {
+            leftAlignment = topAlignment;
+        }
+
+        int rightTotal = reachedMidPoint ? endY - midToBottomPoints[0].y : midToBottomPoints[0].y - startY;
+        if (rightTotal > 0) {
+            rightAlignment = reachedMidPoint
+                             ? interpolate(midAlignment, bottomAlignment, (float) (y - midToBottomPoints[0].y) / (float) rightTotal)
+                             : interpolate(topAlignment, midAlignment, (float) (y - topToMidPoints[0].y) / (float) rightTotal);
+        } else {
+            rightAlignment = reachedMidPoint ? midAlignment : topAlignment;
+        }
+
+        if (left.maxX > right.minX) {
+            SWAP(left, right, struct LineYPoint);
+            SWAP(leftAlignment, rightAlignment, float);
+        }
 
         assert(left.y == y);
         assert(right.y == y);
 
-        render_scanline(display, renderSettings, triangle, globalLight, left, right);
+        renderOp.yCoord = y;
+        renderOp.lineLeft = left;
+        renderOp.lineRight = right;
+        renderOp.leftLightAlignment = leftAlignment;
+        renderOp.rightLightAlignment = rightAlignment;
+
+        render_scanline(&renderOp);
 
         if (!reachedMidPoint && topToMidIndex >= topToMidCount - 1) {
             reachedMidPoint = true;
@@ -264,9 +346,9 @@ void render_triangle(const struct KCR_Display* display,
                      const struct KCR_RenderTriangle* triangle,
                      const struct KCR_GlobalLight* globalLight,
                      const struct KCR_Matrix4* projection) {
-    struct KCR_Vec4 projectedVector1 = perform_projection(projection, &triangle->v1);
-    struct KCR_Vec4 projectedVector2 = perform_projection(projection, &triangle->v2);
-    struct KCR_Vec4 projectedVector3 = perform_projection(projection, &triangle->v3);
+    struct KCR_Vec4 projectedVector1 = perform_projection(projection, &triangle->vertexPositions[0]);
+    struct KCR_Vec4 projectedVector2 = perform_projection(projection, &triangle->vertexPositions[1]);
+    struct KCR_Vec4 projectedVector3 = perform_projection(projection, &triangle->vertexPositions[2]);
 
     struct KCR_Vec2 projectedPoint1 = adjust_to_screen_space(display, kcr_vec2_from_vec4(&projectedVector1));
     struct KCR_Vec2 projectedPoint2 = adjust_to_screen_space(display, kcr_vec2_from_vec4(&projectedVector2));

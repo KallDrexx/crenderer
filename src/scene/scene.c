@@ -13,7 +13,7 @@ bool kcr_scene_init(struct KCR_Scene* scene) {
     scene->camera.zFar = 100.0f;
     scene->camera.fieldOfViewRadians = kcr_degrees_to_radians(60);
     scene->globalLight.direction.x = 1;
-    scene->globalLight.direction.y = -1;
+    scene->globalLight.direction.y = 1;
     scene->globalLight.direction.z = 0;
     scene->globalLight.direction = kcr_vec3_normalize(&scene->globalLight.direction);
 

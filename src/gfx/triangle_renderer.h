@@ -8,15 +8,15 @@
 #include "../scene/lighting.h"
 
 /*
- * Represents a triangle that has been transformed and projected
+ * Represents a triangle that has been transformed
  */
 struct KCR_RenderTriangle {
-    struct KCR_Vec3 v1;
-    struct KCR_Vec3 v2;
-    struct KCR_Vec3 v3;
+    struct KCR_Vec3 vertexPositions[3];
+    struct KCR_Vec3 vertexNormals[3];
+    struct KCR_Vec2 vertexTextureCoordinates[3];
     uint32_t color;
     float averageDepth;
-    struct KCR_Vec3 normalizedNormal;
+    struct KCR_Vec3 normalizedTriangleNormal;
 };
 
 void render_triangle(const struct KCR_Display* display,

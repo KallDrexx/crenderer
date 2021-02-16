@@ -12,16 +12,35 @@ void transform_face(struct KCR_RenderTriangle* triangle,
                     const struct KCR_Mesh* mesh,
                     const struct KCR_Matrix4* transform) {
 
-    triangle->v1 = mesh->vertexList[face->v1.positionIndex];
-    triangle->v2 = mesh->vertexList[face->v2.positionIndex];
-    triangle->v3 = mesh->vertexList[face->v3.positionIndex];
+    triangle->vertexPositions[0] = kcr_mat4_vec3_mult(transform, &mesh->vertexList[face->v1.positionIndex]);
+    triangle->vertexPositions[1] = kcr_mat4_vec3_mult(transform, &mesh->vertexList[face->v2.positionIndex]);
+    triangle->vertexPositions[2] = kcr_mat4_vec3_mult(transform, &mesh->vertexList[face->v3.positionIndex]);
+
+    // Don't translate the normal, just rotate and scale.
+    struct KCR_Matrix4 normalTransform = *transform;
+    normalTransform.m[0][3] = 0;
+    normalTransform.m[1][3] = 0;
+    normalTransform.m[2][3] = 0;
+    triangle->vertexNormals[0] = kcr_mat4_vec3_mult(&normalTransform, &mesh->normalList[face->v1.normalIndex]);
+    triangle->vertexNormals[1] = kcr_mat4_vec3_mult(&normalTransform, &mesh->normalList[face->v2.normalIndex]);
+    triangle->vertexNormals[2] = kcr_mat4_vec3_mult(&normalTransform, &mesh->normalList[face->v3.normalIndex]);
+
+    // normalize the normal vectors for alignment determination
+    triangle->vertexNormals[0] = kcr_vec3_normalize(&triangle->vertexNormals[0]);
+    triangle->vertexNormals[1] = kcr_vec3_normalize(&triangle->vertexNormals[1]);
+    triangle->vertexNormals[2] = kcr_vec3_normalize(&triangle->vertexNormals[2]);
+
+    triangle->vertexTextureCoordinates[0] = mesh->textureCoordsList[face->v1.textureIndex];
+    triangle->vertexTextureCoordinates[1] = mesh->textureCoordsList[face->v2.textureIndex];
+    triangle->vertexTextureCoordinates[2] = mesh->textureCoordsList[face->v3.textureIndex];
+
     triangle->color = face->color;
+    triangle->averageDepth = (triangle->vertexPositions[0].z + triangle->vertexPositions[1].z + triangle->vertexPositions[2].z) / 3;
 
-    triangle->v1 = kcr_mat4_vec3_mult(transform, &triangle->v1);
-    triangle->v2 = kcr_mat4_vec3_mult(transform, &triangle->v2);
-    triangle->v3 = kcr_mat4_vec3_mult(transform, &triangle->v3);
-
-    triangle->averageDepth = (triangle->v1.z + triangle->v2.z + triangle->v3.z) / 3;
+    const struct KCR_Vec3 v1 = kcr_vec3_sub(&triangle->vertexPositions[1], &triangle->vertexPositions[0]);
+    const struct KCR_Vec3 v2 = kcr_vec3_sub(&triangle->vertexPositions[2], &triangle->vertexPositions[0]);
+    triangle->normalizedTriangleNormal = kcr_vec3_cross(&v1, &v2);
+    triangle->normalizedTriangleNormal = kcr_vec3_normalize(&triangle->normalizedTriangleNormal);
 }
 
 void update_render_mode(struct KCR_Renderer *renderer, const struct KCR_InputState *inputState) {
@@ -44,6 +63,10 @@ void update_render_mode(struct KCR_Renderer *renderer, const struct KCR_InputSta
                 break;
 
             case LIGHTING_FLAT:
+                renderer->renderMode.lightingMode = LIGHTING_SMOOTH;
+                break;
+
+            case LIGHTING_SMOOTH:
                 renderer->renderMode.lightingMode = LIGHTING_NONE;
                 break;
         }
@@ -143,13 +166,8 @@ void kcr_renderer_render(struct KCR_Renderer *renderer,
     for (triangleIndex = 0; triangleIndex < triangleCount; triangleIndex++) {
         struct KCR_RenderTriangle* triangle = &renderer->triangles[triangleIndex];
 
-        const struct KCR_Vec3 v1 = kcr_vec3_sub(&triangle->v2, &triangle->v1);
-        const struct KCR_Vec3 v2 = kcr_vec3_sub(&triangle->v3, &triangle->v1);
-        triangle->normalizedNormal = kcr_vec3_cross(&v1, &v2);
-        triangle->normalizedNormal = kcr_vec3_normalize(&triangle->normalizedNormal);
-
-        const struct KCR_Vec3 vertexToCameraVector = kcr_vec3_sub(&triangle->v1, &scene->camera.position);
-        const float vertexCameraAlignment = kcr_vec3_dot(&triangle->normalizedNormal, &vertexToCameraVector);
+        const struct KCR_Vec3 vertexToCameraVector = kcr_vec3_sub(&triangle->vertexPositions[0], &scene->camera.position);
+        const float vertexCameraAlignment = kcr_vec3_dot(&triangle->normalizedTriangleNormal, &vertexToCameraVector);
 
         if (!renderer->renderMode.enableBackFaceCulling || vertexCameraAlignment > 0) {
             // Since the normal is pointing in generally the same direction as the vector of the face to the camera

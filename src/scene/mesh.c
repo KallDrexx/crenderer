@@ -77,9 +77,12 @@ bool kcr_mesh_from_obj_file(struct KCR_Mesh* mesh, char* filename) {
                 temp = kcr_vec3_normalize(&temp);
 
                 struct KCR_Vec3* normal = kcr_list_new_item((void**) &normalList);
-                normal->x = temp.x;
-                normal->y = temp.y;
-                normal->z = temp.z;
+
+                // OBJ files are CCW, but we are CW and left handed.  So we need to invert the normal vectors to align
+                // with our coordinate system
+                normal->x = -temp.x;
+                normal->y = -temp.y;
+                normal->z = -temp.z;
             }
 
             else if (strncmp(buffer, "vt", 2) == 0) {
@@ -154,7 +157,7 @@ bool kcr_mesh_from_obj_file(struct KCR_Mesh* mesh, char* filename) {
                                 break;
                             }
 
-                            vertexDetails->normalIndex = value - 1; // change from 1 to 0 based indexes
+                            vertexDetails->textureIndex = value - 1; // change from 1 to 0 based indexes
                         }
 
                         start = end;
@@ -167,7 +170,7 @@ bool kcr_mesh_from_obj_file(struct KCR_Mesh* mesh, char* filename) {
                                     break;
                                 }
 
-                                vertexDetails->textureIndex = value - 1; // change from 1 to 0 based indexes
+                                vertexDetails->normalIndex = value - 1; // change from 1 to 0 based indexes
                             }
 
                             start = end;
