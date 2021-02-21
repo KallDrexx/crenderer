@@ -50,10 +50,27 @@ void update_render_mode(struct KCR_Renderer *renderer, const struct KCR_InputSta
 
     if (inputState->two_pressed) {
         renderer->renderMode.showWireframe = !renderer->renderMode.showWireframe;
+        if (!renderer->renderMode.showWireframe && renderer->renderMode.triangleFillMode == FILL_NONE) {
+            renderer->renderMode.showWireframe = true;
+        }
     }
 
     if (inputState->three_pressed) {
-        renderer->renderMode.showSolidFaces = !renderer->renderMode.showSolidFaces;
+        switch(renderer->renderMode.triangleFillMode) {
+            case FILL_NONE:
+                renderer->renderMode.triangleFillMode = FILL_MESH_TRI_COLORS;
+                break;
+
+            case FILL_MESH_TRI_COLORS:
+                renderer->renderMode.triangleFillMode = FILL_WHITE;
+                break;
+
+            case FILL_WHITE:
+                renderer->renderMode.triangleFillMode = renderer->renderMode.showWireframe
+                        ? FILL_NONE
+                        : FILL_MESH_TRI_COLORS;
+                break;
+        }
     }
 
     if (inputState->four_pressed) {
@@ -70,10 +87,6 @@ void update_render_mode(struct KCR_Renderer *renderer, const struct KCR_InputSta
                 renderer->renderMode.lightingMode = LIGHTING_NONE;
                 break;
         }
-    }
-
-    if (!renderer->renderMode.showWireframe && !renderer->renderMode.showSolidFaces) {
-        renderer->renderMode.showWireframe = true;
     }
 }
 
@@ -94,7 +107,7 @@ bool kcr_renderer_init(struct KCR_Renderer *renderer, const struct KCR_Display *
     renderer->triangles = kcr_list_create(sizeof(struct KCR_RenderTriangle));
     renderer->renderMode.showWireframe = false;
     renderer->renderMode.showVertices = false;
-    renderer->renderMode.showSolidFaces = true;
+    renderer->renderMode.triangleFillMode = FILL_MESH_TRI_COLORS;
     renderer->renderMode.enableBackFaceCulling = true;
 
     return true;

@@ -18,10 +18,10 @@ struct ScanLineRenderOperation {
     struct LineYPoint lineLeft;
     struct LineYPoint lineRight;
     uint32_t defaultTriangleColor;
-    uint32_t flatColor;
     int yCoord;
     float leftLightAlignment;
     float rightLightAlignment;
+    float faceLightAlignment;
 };
 
 // Re-used point lists so we don't have to allocate every triangle
@@ -177,26 +177,42 @@ void render_scanline(const struct ScanLineRenderOperation* renderOperation) {
     if (right > renderOperation->display->windowWidth) right = renderOperation->display->windowWidth;
 
     for (int x = left; x <= right; x++) {
-        bool renderPixel = false;
-        uint32_t color = 0xFFFFFFFF;
+        bool pixelRenderingSet = false;
+        uint32_t pixelColor = 0xFFFFFFFF;
 
         if (renderOperation->renderSettings->showWireframe) {
             if ((x >= renderOperation->lineLeft.minX && x <= renderOperation->lineLeft.maxX) ||
                 (x >= renderOperation->lineRight.minX && x <= renderOperation->lineRight.maxX)) {
-                renderPixel = true;
-                color = renderOperation->renderSettings->showSolidFaces ? 0xFF000000 : 0xFFFFFFFF;
+                pixelColor = renderOperation->renderSettings->triangleFillMode != FILL_NONE ? 0xFF000000 : 0xFFFFFFFF;
+                pixelRenderingSet = true;
             }
         }
 
-        if (renderOperation->renderSettings->showSolidFaces && !renderPixel) {
-            renderPixel = true;
+        if (renderOperation->renderSettings->triangleFillMode != FILL_NONE && !pixelRenderingSet) {
+            pixelRenderingSet = true;
+
+            // Set the pixel color
+            switch (renderOperation->renderSettings->triangleFillMode) {
+                case FILL_NONE:
+                    assert(false); // should never occur
+                    break;
+
+                case FILL_MESH_TRI_COLORS:
+                    pixelColor = renderOperation->defaultTriangleColor;
+                    break;
+
+                case FILL_WHITE:
+                    pixelColor = 0xFFFFFFFF;
+                    break;
+            }
+
             switch (renderOperation->renderSettings->lightingMode) {
                 case LIGHTING_NONE:
-                    color = renderOperation->defaultTriangleColor;
+                    // No change
                     break;
 
                 case LIGHTING_FLAT:
-                    color = renderOperation->flatColor;
+                    pixelColor = modify_color(pixelColor, renderOperation->faceLightAlignment);
                     break;
 
                 case LIGHTING_SMOOTH: {
@@ -208,15 +224,15 @@ void render_scanline(const struct ScanLineRenderOperation* renderOperation) {
                         alignment = interpolate(renderOperation->leftLightAlignment, renderOperation->rightLightAlignment, length);
                     }
 
-                    color = modify_color(0xFFFFFFFF, alignment);
+                    pixelColor = modify_color(pixelColor, alignment);
 
                     break;
                 }
             }
         }
 
-        if (renderPixel) {
-            draw_pixel(renderOperation->display, x, renderOperation->yCoord, color);
+        if (pixelRenderingSet) {
+            draw_pixel(renderOperation->display, x, renderOperation->yCoord, pixelColor);
         }
     }
 }
@@ -261,13 +277,11 @@ void perform_render(const struct KCR_Display* display,
 
     float bottomAlignment = getLightAlignment(globalLight, triangle->vertexNormals[bottomIndex]);
 
-    uint32_t flatColor = modify_color(0xFFFFFFFF, faceLightAlignment);
-
     struct ScanLineRenderOperation renderOp = {
             .display = display,
             .renderSettings = renderSettings,
             .defaultTriangleColor = triangle->color,
-            .flatColor = flatColor,
+            .faceLightAlignment = faceLightAlignment,
     };
 
     for (int y = startY; y <= endY; y++) {
