@@ -15,6 +15,7 @@ struct LineYPoint {
 struct ScanLineRenderOperation {
     const struct KCR_Display* display;
     const struct KCR_RenderSettings* renderSettings;
+    const struct KCR_Texture* texture;
     struct LineYPoint lineLeft;
     struct LineYPoint lineRight;
     uint32_t defaultTriangleColor;
@@ -22,6 +23,8 @@ struct ScanLineRenderOperation {
     float leftLightAlignment;
     float rightLightAlignment;
     float faceLightAlignment;
+    struct KCR_Vec2 leftTextureCoords;
+    struct KCR_Vec2 rightTextureCoords;
 };
 
 // Re-used point lists so we don't have to allocate every triangle
@@ -75,6 +78,16 @@ static inline float interpolate(float first, float second, float percent) {
     }
 
     return first - (first - second) * percent;
+}
+
+/*
+ * Linear interpolation between two 2 component vectors
+ */
+static inline struct KCR_Vec2 interpolate_vec2(struct KCR_Vec2 first, struct KCR_Vec2 second, float percent) {
+    float x = interpolate(first.x, second.x, percent);
+    float y = interpolate(first.y, second.y, percent);
+
+    return (struct KCR_Vec2){x, y};
 }
 
 int sort_points(const void* a, const void* b) {
@@ -204,6 +217,23 @@ void render_scanline(const struct ScanLineRenderOperation* renderOperation) {
                 case FILL_WHITE:
                     pixelColor = 0xFFFFFFFF;
                     break;
+
+                case FILL_TEXTURED: {
+                    struct KCR_Vec2 textureCoords;
+                    if (right == left) {
+                        textureCoords = renderOperation->leftTextureCoords;
+                    } else {
+                        float progress = (float) (x - left) / (float) (right - left);
+                        textureCoords = interpolate_vec2(renderOperation->leftTextureCoords,
+                                                         renderOperation->rightTextureCoords,
+                                                         progress);
+                    }
+
+                    uint32_t index = kcr_texture_texel_index(renderOperation->texture, textureCoords.x, textureCoords.y);
+                    pixelColor = renderOperation->texture->texels[index];
+
+                    break;
+                }
             }
 
             switch (renderOperation->renderSettings->lightingMode) {
@@ -274,12 +304,16 @@ void perform_render(const struct KCR_Display* display,
     float faceLightAlignment = getLightAlignment(globalLight, triangle->normalizedTriangleNormal);
     float topAlignment = getLightAlignment(globalLight, triangle->vertexNormals[topIndex]);
     float midAlignment = getLightAlignment(globalLight, triangle->vertexNormals[midIndex]);
-
     float bottomAlignment = getLightAlignment(globalLight, triangle->vertexNormals[bottomIndex]);
+
+    struct KCR_Vec2 topTextureCoords = triangle->vertexTextureCoordinates[topIndex];
+    struct KCR_Vec2 midTextureCoords = triangle->vertexTextureCoordinates[midIndex];
+    struct KCR_Vec2 bottomTextureCoords = triangle->vertexTextureCoordinates[bottomIndex];
 
     struct ScanLineRenderOperation renderOp = {
             .display = display,
             .renderSettings = renderSettings,
+            .texture = triangle->texture,
             .defaultTriangleColor = triangle->color,
             .faceLightAlignment = faceLightAlignment,
     };
@@ -291,25 +325,40 @@ void perform_render(const struct KCR_Display* display,
                 : topToMidPoints[topToMidIndex];
 
         float leftAlignment;
-        float rightAlignment;
+        struct KCR_Vec2 leftTextureCoords;
         if (endY - startY > 0) {
-            leftAlignment = interpolate(topAlignment, bottomAlignment, (float) (y - startY) / (float) (endY - startY));
+            float progress = (float) (y - startY) / (float) (endY - startY);
+            leftAlignment = interpolate(topAlignment, bottomAlignment, progress);
+            leftTextureCoords = interpolate_vec2(topTextureCoords, bottomTextureCoords, progress);
         } else {
             leftAlignment = topAlignment;
+            leftTextureCoords = topTextureCoords;
         }
 
+        float rightAlignment;
+        struct KCR_Vec2 rightTextureCoords;
         int rightTotal = reachedMidPoint ? endY - midToBottomPoints[0].y : midToBottomPoints[0].y - startY;
         if (rightTotal > 0) {
+            float progress = reachedMidPoint
+                    ? (float) (y - midToBottomPoints[0].y) / (float) rightTotal
+                    : (float) (y - topToMidPoints[0].y) / (float) rightTotal;
+
             rightAlignment = reachedMidPoint
-                             ? interpolate(midAlignment, bottomAlignment, (float) (y - midToBottomPoints[0].y) / (float) rightTotal)
-                             : interpolate(topAlignment, midAlignment, (float) (y - topToMidPoints[0].y) / (float) rightTotal);
+                    ? interpolate(midAlignment, bottomAlignment, progress)
+                    : interpolate(topAlignment, midAlignment, progress);
+
+            rightTextureCoords = reachedMidPoint
+                    ? interpolate_vec2(midTextureCoords, bottomTextureCoords, progress)
+                    : interpolate_vec2(topTextureCoords, midTextureCoords, progress);
         } else {
             rightAlignment = reachedMidPoint ? midAlignment : topAlignment;
+            rightTextureCoords = reachedMidPoint ? midTextureCoords : topTextureCoords;
         }
 
         if (left.maxX > right.minX) {
             SWAP(left, right, struct LineYPoint);
             SWAP(leftAlignment, rightAlignment, float);
+            SWAP(leftTextureCoords, rightTextureCoords, struct KCR_Vec2);
         }
 
         assert(left.y == y);
@@ -320,6 +369,8 @@ void perform_render(const struct KCR_Display* display,
         renderOp.lineRight = right;
         renderOp.leftLightAlignment = leftAlignment;
         renderOp.rightLightAlignment = rightAlignment;
+        renderOp.leftTextureCoords = leftTextureCoords;
+        renderOp.rightTextureCoords = rightTextureCoords;
 
         render_scanline(&renderOp);
 

@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include "../math/vector.h"
 #include "../math/matrix.h"
+#include "texture.h"
 
 /*
  * Represents information about a single vertex within a mesh.  All indices are zero based, and dependent on their
@@ -36,6 +37,7 @@ struct KCR_Mesh {
     struct KCR_Face* faceList;
     struct KCR_Vec3* normalList;
     struct KCR_Vec2* textureCoordsList;
+    struct KCR_Texture* texture;
 };
 
 /*

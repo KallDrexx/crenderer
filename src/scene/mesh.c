@@ -192,6 +192,7 @@ bool kcr_mesh_from_obj_file(struct KCR_Mesh* mesh, char* filename) {
     mesh->faceList = faceList;
     mesh->textureCoordsList = textureList;
     mesh->normalList = normalList;
+    mesh->texture = kcr_texture_red_brick();
 
     fclose(file);
 
@@ -209,6 +210,8 @@ void kcr_mesh_uninit(struct KCR_Mesh *mesh) {
         mesh->vertexList = NULL;
         mesh->textureCoordsList = NULL;
         mesh->normalList = NULL;
+
+        kcr_texture_free(mesh->texture);
     }
 }
 

@@ -41,6 +41,8 @@ void transform_face(struct KCR_RenderTriangle* triangle,
     const struct KCR_Vec3 v2 = kcr_vec3_sub(&triangle->vertexPositions[2], &triangle->vertexPositions[0]);
     triangle->normalizedTriangleNormal = kcr_vec3_cross(&v1, &v2);
     triangle->normalizedTriangleNormal = kcr_vec3_normalize(&triangle->normalizedTriangleNormal);
+
+    triangle->texture = mesh->texture;
 }
 
 void update_render_mode(struct KCR_Renderer *renderer, const struct KCR_InputState *inputState) {
@@ -66,10 +68,13 @@ void update_render_mode(struct KCR_Renderer *renderer, const struct KCR_InputSta
                 break;
 
             case FILL_WHITE:
-                renderer->renderMode.triangleFillMode = renderer->renderMode.showWireframe
-                        ? FILL_NONE
-                        : FILL_MESH_TRI_COLORS;
+                renderer->renderMode.triangleFillMode = FILL_TEXTURED;
                 break;
+
+            case FILL_TEXTURED:
+                renderer->renderMode.triangleFillMode = renderer->renderMode.showWireframe
+                                                        ? FILL_NONE
+                                                        : FILL_MESH_TRI_COLORS;
         }
     }
 
