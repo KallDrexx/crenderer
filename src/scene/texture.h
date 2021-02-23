@@ -15,9 +15,9 @@ struct KCR_Texture {
 };
 
 /*
- * Creates a texture from a constant in memory representation of a red brick texture
+ * Loads an texture from an asset file.
  */
-struct KCR_Texture* kcr_texture_red_brick(void);
+struct KCR_Texture* kcr_texture_from_asset(const char* assetName);
 
 /*
  * Frees a previously allocated texture
@@ -29,8 +29,11 @@ void kcr_texture_free(struct KCR_Texture* texture);
  */
 static inline uint32_t kcr_texture_texel_index(const struct KCR_Texture* texture, float u, float v) {
     assert(texture != NULL);
-    assert(u >= 0 && u <= 1.0f);
-    assert(v >= 0 && v <= 1.0f);
+    assert(u >= 0);
+    assert(v >= 0);
+
+    while (u > 1.0f) u -= 1.0f;
+    while (v > 1.0f) v -= 1.0f;
 
     uint32_t y = texture->height - (uint32_t)(texture->height * v);
     uint32_t x = (uint32_t) (texture->width * u);

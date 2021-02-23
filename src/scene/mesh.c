@@ -13,10 +13,19 @@ uint32_t colors[] = {RED, MAROON, BROWN, OLIVE, ORANGE, GOLD, GREEN, TEAL, TURQU
                      DARK_RED, LIGHT_SALMON, FIREBRICK, KHAKI, LAWN_GREEN, SEA_GREEN, CYAN, SKY_BLUE, INDIGO, DARK_ORCHID,
                      MAGENTA, CORN_FLOWER_BLUE, LIGHT_CORAL, HOT_PINK, CHOCOLATE, MEDIUM_AQUA_MARINE, BROWN};
 
-bool kcr_mesh_from_obj_file(struct KCR_Mesh* mesh, char* filename) {
+bool parse_obj_file(struct KCR_Mesh* mesh, char* assetName) {
     #define BUFFER_SIZE 1000
+    #define ASSETS_FOLDER "assets/"
+    #define OBJ_EXTENSION ".obj"
 
     assert(mesh != NULL);
+    assert(assetName != NULL);
+    assert(strlen(assetName) > 0);
+
+    char* filename = calloc(strlen(assetName) + strlen(ASSETS_FOLDER) + strlen(OBJ_EXTENSION), sizeof(char));
+    strcat(filename, ASSETS_FOLDER);
+    strcat(filename, assetName);
+    strcat(filename, OBJ_EXTENSION);
 
     FILE* file = fopen(filename, "r");
     if (file == NULL) {
@@ -192,9 +201,22 @@ bool kcr_mesh_from_obj_file(struct KCR_Mesh* mesh, char* filename) {
     mesh->faceList = faceList;
     mesh->textureCoordsList = textureList;
     mesh->normalList = normalList;
-    mesh->texture = kcr_texture_red_brick();
 
     fclose(file);
+
+    return true;
+}
+
+
+bool kcr_mesh_load_asset(struct KCR_Mesh* mesh, char* assetName) {
+    if (!parse_obj_file(mesh, assetName)) {
+        return false;
+    }
+
+    mesh->texture = kcr_texture_from_asset(assetName);
+    if (mesh->texture == NULL) {
+        return false;
+    }
 
     return true;
 }

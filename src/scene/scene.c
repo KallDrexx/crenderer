@@ -3,7 +3,7 @@
 #include "../list.h"
 #include "../math/angles.h"
 
-size_t meshIndex = 1;
+size_t meshIndex = 0;
 
 bool kcr_scene_init(struct KCR_Scene* scene) {
     assert(scene != NULL);
@@ -25,15 +25,15 @@ bool kcr_scene_init(struct KCR_Scene* scene) {
     struct KCR_Mesh* f22 = kcr_list_new_item((void**) &scene->meshList);
     assert(kcr_list_length(scene->meshList) == 3);
 
-    if (kcr_mesh_from_obj_file(teapot, "assets/teapot.obj") == false) {
+    if (kcr_mesh_load_asset(teapot, "cube") == false) {
         return false;
     }
 
-    if (kcr_mesh_from_obj_file(cube, "assets/cube.obj") == false) {
+    if (kcr_mesh_load_asset(cube, "f22") == false) {
         return false;
     }
 
-    if (kcr_mesh_from_obj_file(f22, "assets/f22.obj") == false) {
+    if (kcr_mesh_load_asset(f22, "crab") == false) {
         return false;
     }
 

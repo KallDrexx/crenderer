@@ -52,9 +52,9 @@ struct KCR_MeshInstance {
 };
 
 /*
- * Initializes a not-yet initialized mesh from a file in the Wavefront OBJ file format.
+ * Initializes a not-yet initialized mesh from an asset file
  */
-bool kcr_mesh_from_obj_file(struct KCR_Mesh* mesh, char* filename);
+bool kcr_mesh_load_asset(struct KCR_Mesh* mesh, char* assetName);
 
 /*
  * Un-initializes a mesh, freeing memory for pointers it controls.  The mesh itself will not be deallocated

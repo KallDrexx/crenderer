@@ -41,12 +41,12 @@ uint32_t modify_color(uint32_t original, float multiplier) {
     assert(multiplier >= 0.0f);
     assert(multiplier <= 1.0f);
 
-    uint32_t a = 0xFF000000;
-    uint32_t r = (original & 0x00FF0000) * multiplier; // NOLINT(cppcoreguidelines-narrowing-conversions)
-    uint32_t g = (original & 0x0000FF00) * multiplier; // NOLINT(cppcoreguidelines-narrowing-conversions)
-    uint32_t b = (original & 0x000000FF) * multiplier; // NOLINT(cppcoreguidelines-narrowing-conversions)
+    uint32_t a = 0x000000FF;
+    uint32_t r = (original & 0xFF000000) * multiplier; // NOLINT(cppcoreguidelines-narrowing-conversions)
+    uint32_t g = (original & 0x00FF0000) * multiplier; // NOLINT(cppcoreguidelines-narrowing-conversions)
+    uint32_t b = (original & 0x0000FF00) * multiplier; // NOLINT(cppcoreguidelines-narrowing-conversions)
 
-    return a | (r & 0x00FF0000) | (g & 0x0000FF00) | (b & 0x000000FF);
+    return a | (r & 0xFF000000) | (g & 0x00FF0000) | (b & 0x0000FF00);
 }
 
 static inline float getLightAlignment(const struct KCR_GlobalLight* light, const struct KCR_Vec3 unitVector) {
