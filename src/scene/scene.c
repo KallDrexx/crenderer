@@ -82,6 +82,8 @@ void kcr_scene_update(struct KCR_Scene* scene, const struct KCR_InputState* inpu
             instance->rotation.x += MOUSE_ROTATION_SPEED * inputState->mouse_drag_y;
         }
 
+        instance->position.z += inputState->mouse_wheel_amount;
+
         if (meshChanged) {
             size_t index = meshIndex % kcr_list_length(scene->meshList);
             struct KCR_Mesh* mesh = &scene->meshList[index];

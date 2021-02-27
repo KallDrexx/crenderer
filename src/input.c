@@ -166,6 +166,7 @@ void kcr_input_update_state(struct KCR_InputState* state) {
     state->c_pressed = false;
     state->mouse_drag_y = 0;
     state->mouse_drag_x = 0;
+    state->mouse_wheel_amount = 0;
 
     SDL_Event event;
     while (SDL_PollEvent(&event))
@@ -199,6 +200,15 @@ void kcr_input_update_state(struct KCR_InputState* state) {
                 if (event.button.button == SDL_BUTTON_LEFT) {
                     state->left_mouse_down = false;
                 }
+
+                break;
+
+            case SDL_MOUSEWHEEL:
+                if (event.wheel.y != 0) {
+                    state->mouse_wheel_amount = event.wheel.y;
+                }
+
+                break;
         }
     }
 }
