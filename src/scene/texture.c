@@ -23,7 +23,19 @@ struct KCR_Texture *kcr_texture_from_asset(const char *assetName) {
             texture->width = upng_get_width(png);
             texture->height = upng_get_height(png);
 
-            memcpy(texture->texels, upng_get_buffer(png), upng_get_size(png));
+            // Since PNGs are usually RGBA, but all of our current color operations are based on ARGB, we need to
+            // convert each texel from the former to the latter.
+            const uint8_t* buffer = upng_get_buffer(png);
+            for (uint32_t texelIndex = 0; texelIndex < texture->width * texture->height; texelIndex++) {
+                uint32_t bufferIndex = texelIndex * 4;
+
+                uint32_t red   = ((uint32_t) buffer[bufferIndex + 0] << 16);
+                uint32_t green = ((uint32_t) buffer[bufferIndex + 1] << 8);
+                uint32_t blue  = ((uint32_t) buffer[bufferIndex + 2] << 0);
+                uint32_t alpha = ((uint32_t) buffer[bufferIndex + 3] << 24);
+
+                texture->texels[texelIndex] = alpha | red | green | blue;
+            }
         }
 
         upng_free(png);

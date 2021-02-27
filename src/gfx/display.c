@@ -59,7 +59,7 @@ bool kcr_display_init(struct KCR_Display* display) {
 
     display->internal->texture = SDL_CreateTexture(
             display->internal->renderer,
-            SDL_PIXELFORMAT_RGBA32,
+            SDL_PIXELFORMAT_ARGB8888,
             SDL_TEXTUREACCESS_STREAMING,
             display->windowWidth,
             display->windowHeight);
