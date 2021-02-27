@@ -29,14 +29,16 @@ void kcr_texture_free(struct KCR_Texture* texture);
  */
 static inline uint32_t kcr_texture_texel_index(const struct KCR_Texture* texture, float u, float v) {
     assert(texture != NULL);
-    assert(u >= 0);
-    assert(v >= 0);
-
+    while (u < 0.0f) u += 1.0f;
+    while (v < 0.0f) v += 1.0f;
     while (u > 1.0f) u -= 1.0f;
     while (v > 1.0f) v -= 1.0f;
 
-    uint32_t y = texture->height - (uint32_t)(texture->height * v);
-    uint32_t x = (uint32_t) (texture->width * u);
+    uint32_t w = texture->width - 1;
+    uint32_t h = texture->height - 1;
+
+    uint32_t x = w * u;
+    uint32_t y = h - (h * v); // (0,0) is bottom left, so index needs to account for that
 
     return y * texture->width + x;
 }

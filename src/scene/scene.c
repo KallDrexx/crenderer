@@ -88,9 +88,7 @@ void kcr_scene_update(struct KCR_Scene* scene, const struct KCR_InputState* inpu
             size_t index = meshIndex % kcr_list_length(scene->meshList);
             struct KCR_Mesh* mesh = &scene->meshList[index];
             instance->mesh = mesh;
-            instance->scale = index == 0
-                    ? (struct KCR_Vec3) {0.25f, 0.25f, 0.25f}
-                    : (struct KCR_Vec3) {1.0f, 1.0f, 1.0f};
+            instance->scale = (struct KCR_Vec3) {1.0f, 1.0f, 1.0f};
         }
     }
 }
