@@ -169,7 +169,7 @@ struct KCR_Vec2 adjust_to_screen_space(const struct KCR_Display* display, struct
     float centerWidth = (float) display->windowWidth / 2.0f;
     float centerHeight = (float) display->windowHeight / 2.0f;
 
-    point.x *= -centerWidth; // I'm not quite sure why the x axis is flipped
+    point.x *= centerWidth;
     point.x += centerWidth;
 
     point.y *= -centerHeight; // invert for canvas

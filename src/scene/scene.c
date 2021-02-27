@@ -70,15 +70,15 @@ void kcr_scene_update(struct KCR_Scene* scene, const struct KCR_InputState* inpu
 
         if (inputState->up_down) instance->position.y += MOVE_SPEED * timeDelta;
         if (inputState->down_down) instance->position.y -= MOVE_SPEED * timeDelta;
-        if (inputState->left_down) instance->position.x -= MOVE_SPEED * timeDelta;
-        if (inputState->right_down) instance->position.x += MOVE_SPEED * timeDelta;
+        if (inputState->left_down) instance->position.x += MOVE_SPEED * timeDelta;
+        if (inputState->right_down) instance->position.x -= MOVE_SPEED * timeDelta;
         if (inputState->home_down) instance->rotation.z -= KEYBOARD_ROTATION_SPEED * timeDelta;
         if (inputState->end_down) instance->rotation.z += KEYBOARD_ROTATION_SPEED * timeDelta;
         if (inputState->minus_down) instance->position.z -= MOVE_SPEED * timeDelta;
         if (inputState->equals_down) instance->position.z += MOVE_SPEED * timeDelta;
 
         if (inputState->left_mouse_down) {
-            instance->rotation.y += MOUSE_ROTATION_SPEED * inputState->mouse_drag_x;
+            instance->rotation.y -= MOUSE_ROTATION_SPEED * inputState->mouse_drag_x;
             instance->rotation.x += MOUSE_ROTATION_SPEED * inputState->mouse_drag_y;
         }
 
