@@ -5,7 +5,6 @@ enum KCR_TriangleFillMode {FILL_NONE, FILL_MESH_TRI_COLORS, FILL_WHITE, FILL_TEX
 enum KCR_LightingMode {LIGHTING_NONE, LIGHTING_FLAT, LIGHTING_SMOOTH};
 
 struct KCR_RenderSettings {
-    bool showVertices : 1;
     bool showWireframe : 1;
     bool enableBackFaceCulling : 1;
     enum KCR_LightingMode lightingMode;

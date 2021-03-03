@@ -93,4 +93,14 @@ static inline struct KCR_Vec2 kcr_vec2_from_vec4(const struct KCR_Vec4* vec4) {
     return result;
 }
 
+/*
+ * Subtracts a 2 component vector from another
+ */
+static inline struct KCR_Vec2 kcr_vec2_sub(const struct KCR_Vec2* first, const struct KCR_Vec2* second) {
+    return (struct KCR_Vec2) {
+        .x = first->x - second->x,
+        .y = first->y - second->y,
+    };
+}
+
 #endif //CRENDERER_VECTOR_H
