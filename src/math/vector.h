@@ -69,6 +69,30 @@ struct KCR_Vec3 kcr_vec3_cross(const struct KCR_Vec3 *first, const struct KCR_Ve
 struct KCR_Vec3 kcr_vec3_normalize(const struct KCR_Vec3* vector);
 
 /*
+ * Subtracts two 4 component vectors
+ */
+static inline struct KCR_Vec4 kcr_vec4_sub(const struct KCR_Vec4* first, const struct KCR_Vec4* second) {
+    return (struct KCR_Vec4) {
+        .x = first->x - second->x,
+        .y = first->y - second->y,
+        .z = first->z - second->z,
+        .w = first->w - second->w,
+    };
+}
+
+/*
+ * Divides a 4 component vector by a scalar
+ */
+static inline struct KCR_Vec4 kcr_vec4_div(const struct KCR_Vec4* vector, float scalar) {
+    return (struct KCR_Vec4) {
+        .x = vector->x / scalar,
+        .y = vector->y / scalar,
+        .z = vector->z / scalar,
+        .w = vector->w / scalar,
+    };
+}
+
+/*
  * Creates a 4 component vector from a 3 component vector with the specified w component
  */
 static inline struct KCR_Vec4 kcr_vec4_from_vec3(const struct KCR_Vec3* vec3, float w) {
@@ -100,6 +124,16 @@ static inline struct KCR_Vec2 kcr_vec2_sub(const struct KCR_Vec2* first, const s
     return (struct KCR_Vec2) {
         .x = first->x - second->x,
         .y = first->y - second->y,
+    };
+}
+
+/*
+ * Divides a 2 component vector by a scalar
+ */
+static inline struct KCR_Vec2 kcr_vec2_div(const struct KCR_Vec2* vec, float scalar) {
+    return (struct KCR_Vec2) {
+        .x = vec->x / scalar,
+        .y = vec->y / scalar,
     };
 }
 

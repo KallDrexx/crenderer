@@ -10,10 +10,10 @@ struct RenderOperation {
     const struct KCR_Display* display;
     const struct KCR_RenderSettings* renderSettings;
     const struct KCR_RenderTriangle* triangle;
-    const struct KCR_Vec2 projectedPoints[3];
+    const struct KCR_Vec4 projectedPoints[3];
 };
 
-struct BaryCentricCoords {
+struct BarycentricCoords {
     float w0;
     float w1;
     float w2;
@@ -75,20 +75,18 @@ struct KCR_Vec4 perform_projection(const struct KCR_Matrix4* projection, const s
     return result;
 }
 
-struct KCR_Vec2 adjust_to_screen_space(const struct KCR_Display* display, struct KCR_Vec2 point) {
+void adjust_to_screen_space(const struct KCR_Display* display, struct KCR_Vec4* point) {
     float centerWidth = (float) display->windowWidth / 2.0f;
     float centerHeight = (float) display->windowHeight / 2.0f;
 
-    point.x *= centerWidth;
-    point.x += centerWidth;
+    point->x *= centerWidth;
+    point->x += centerWidth;
 
-    point.y *= -centerHeight; // invert for canvas
-    point.y += centerHeight;
-
-    return point;
+    point->y *= -centerHeight; // invert for canvas
+    point->y += centerHeight;
 }
 
-static inline struct Boundary get_boundary(const struct KCR_Vec2* v0, const struct KCR_Vec2* v1, const struct KCR_Vec2* v2) {
+static inline struct Boundary get_boundary(const struct KCR_Vec4* v0, const struct KCR_Vec4* v1, const struct KCR_Vec4* v2) {
     struct Boundary result = {
         .minX = (int) v0->x,
         .maxX = (int) v0->x,
@@ -111,18 +109,33 @@ static inline struct Boundary get_boundary(const struct KCR_Vec2* v0, const stru
     return result;
 }
 
-static inline float calc_double_area(const struct KCR_Vec2* v1, const struct KCR_Vec2* v2, const struct KCR_Vec2* v3) {
-    struct KCR_Vec2 v13 = kcr_vec2_sub(v3, v1);
-    struct KCR_Vec2 v12 = kcr_vec2_sub(v2, v1);
+static inline float calc_double_area(const struct KCR_Vec4* v1, const struct KCR_Vec4* v2, const struct KCR_Vec4* v3) {
+    // Only consider the x and y components for area calculation, since we are using this as an area of a triangle
+    // and a triangle is always on a flat plane.
+    struct KCR_Vec4 v13 = kcr_vec4_sub(v3, v1);
+    struct KCR_Vec4 v12 = kcr_vec4_sub(v2, v1);
 
     return v13.x * v12.y - v13.y * v12.x;
+}
+
+static inline struct BarycentricCoords get_barycentric_coords(const struct KCR_Vec4* v0,
+                                                              const struct KCR_Vec4* v1,
+                                                              const struct KCR_Vec4* v2,
+                                                              const struct KCR_Vec4* point,
+                                                              float v012area) {
+    struct BarycentricCoords coords = {
+            .w0 = calc_double_area(v1, v2, point) / v012area,
+            .w1 = calc_double_area(v2, v0, point) / v012area,
+            .w2 = calc_double_area(v0, v1, point) / v012area,
+    };
+
+    return coords;
 }
 
 void perform_render(const struct RenderOperation* renderOperation,
                     const struct KCR_GlobalLight* globalLight) {
 
     // Render using barycentric coordinates
-
     struct Boundary boundary = get_boundary(&renderOperation->projectedPoints[0],
                                             &renderOperation->projectedPoints[1],
                                             &renderOperation->projectedPoints[2]);
@@ -131,23 +144,34 @@ void perform_render(const struct RenderOperation* renderOperation,
                                       &renderOperation->projectedPoints[1],
                                       &renderOperation->projectedPoints[2]);
 
+    // Precalculate u and v divided by w for perspective correction calculations
+    float uDividedByW[3] = {
+            renderOperation->triangle->vertexTextureCoordinates[0].x / renderOperation->projectedPoints[0].w,
+            renderOperation->triangle->vertexTextureCoordinates[1].x / renderOperation->projectedPoints[1].w,
+            renderOperation->triangle->vertexTextureCoordinates[2].x / renderOperation->projectedPoints[2].w,
+    };
+
+    float vDividedByW[3] = {
+            renderOperation->triangle->vertexTextureCoordinates[0].y / renderOperation->projectedPoints[0].w,
+            renderOperation->triangle->vertexTextureCoordinates[1].y / renderOperation->projectedPoints[1].w,
+            renderOperation->triangle->vertexTextureCoordinates[2].y / renderOperation->projectedPoints[2].w,
+    };
+
+    float reciprocalW[3] = {
+            1 / renderOperation->projectedPoints[0].w,
+            1 / renderOperation->projectedPoints[1].w,
+            1 / renderOperation->projectedPoints[2].w,
+    };
+
     for (int x = boundary.minX; x <= boundary.maxX; x++) {
         for (int y = boundary.minY; y <= boundary.maxY; y++) {
-            struct KCR_Vec2 point = {.x = (float) x, .y = (float) y};
+            struct KCR_Vec4 point = {.x = (float) x, .y = (float) y, .z = 0, .w = 0};
 
-            struct BaryCentricCoords coords = {
-                    .w0 = calc_double_area(&renderOperation->projectedPoints[1],
-                                           &renderOperation->projectedPoints[2],
-                                           &point) / fullArea,
-
-                    .w1 = calc_double_area(&renderOperation->projectedPoints[2],
-                                           &renderOperation->projectedPoints[0],
-                                           &point) / fullArea,
-
-                    .w2 = calc_double_area(&renderOperation->projectedPoints[0],
-                                           &renderOperation->projectedPoints[1],
-                                           &point) / fullArea,
-            };
+            struct BarycentricCoords coords = get_barycentric_coords(&renderOperation->projectedPoints[0],
+                                                                     &renderOperation->projectedPoints[1],
+                                                                     &renderOperation->projectedPoints[2],
+                                                                     &point,
+                                                                     fullArea);
 
             // Only inside the triangle if all 3 are zero or positive
             if (coords.w0 < 0 || coords.w1 < 0 || coords.w2 < 0) {
@@ -189,14 +213,22 @@ void perform_render(const struct RenderOperation* renderOperation,
                         break;
 
                     case FILL_TEXTURED: {
-                        // texture coords based on barycentric coordinates
-                        float u = renderOperation->triangle->vertexTextureCoordinates[0].x * coords.w0 +
-                                  renderOperation->triangle->vertexTextureCoordinates[1].x * coords.w1 +
-                                  renderOperation->triangle->vertexTextureCoordinates[2].x * coords.w2;
+                        // perspective correct interpolation for texture coords based on barycentric coordinates
+                        float u, v, interpolatedReciprocalW;
 
-                        float v = renderOperation->triangle->vertexTextureCoordinates[0].y * coords.w0 +
-                                  renderOperation->triangle->vertexTextureCoordinates[1].y * coords.w1 +
-                                  renderOperation->triangle->vertexTextureCoordinates[2].y * coords.w2;
+                        // Divide each u and v value by their corresponding w (original triangle Z depth) in order to
+                        // account for perspective.
+                        u = uDividedByW[0] * coords.w0 + uDividedByW[1] * coords.w1 + uDividedByW[2] * coords.w2;
+                        v = vDividedByW[0] * coords.w0 + vDividedByW[1] * coords.w1 + vDividedByW[2] * coords.w2;
+
+                        // Since we accounted for perspective by dividing the u and v components by w, we need to divide
+                        // u and v by the interpolated reciprocal of w to undo the perspective divide.
+                        interpolatedReciprocalW = reciprocalW[0] * coords.w0 +
+                                reciprocalW[1] * coords.w1 +
+                                reciprocalW[2] * coords.w2;
+
+                        u /= interpolatedReciprocalW;
+                        v /= interpolatedReciprocalW;
 
                         uint32_t index = kcr_texture_texel_index(renderOperation->triangle->texture, u, v);
                         color = renderOperation->triangle->texture->texels[index];
@@ -250,23 +282,23 @@ void render_triangle(const struct KCR_Display* display,
     struct KCR_Vec4 projectedVector2 = perform_projection(projection, &triangle->vertexPositions[1]);
     struct KCR_Vec4 projectedVector3 = perform_projection(projection, &triangle->vertexPositions[2]);
 
-    struct KCR_Vec2 projectedPoint1 = adjust_to_screen_space(display, kcr_vec2_from_vec4(&projectedVector1));
-    struct KCR_Vec2 projectedPoint2 = adjust_to_screen_space(display, kcr_vec2_from_vec4(&projectedVector2));
-    struct KCR_Vec2 projectedPoint3 = adjust_to_screen_space(display, kcr_vec2_from_vec4(&projectedVector3));
+    adjust_to_screen_space(display, &projectedVector1);
+    adjust_to_screen_space(display, &projectedVector2);
+    adjust_to_screen_space(display, &projectedVector3);
 
     // Ignore triangles outside screen boundaries
     float maxY = (float) display->windowHeight;
     float maxX = (float) display->windowWidth;
-    if (projectedPoint1.y < 0 && projectedPoint2.y < 0 && projectedPoint3.y < 0) return;
-    if (projectedPoint1.y > maxY && projectedPoint2.y > maxY && projectedPoint3.y > maxY) return;
-    if (projectedPoint1.x < 0 && projectedPoint2.x < 0 && projectedPoint3.x < 0) return;
-    if (projectedPoint1.x > maxX && projectedPoint2.x > maxX && projectedPoint3.x > maxX) return;
+    if (projectedVector1.y < 0 && projectedVector2.y < 0 && projectedVector3.y < 0) return;
+    if (projectedVector1.y > maxY && projectedVector2.y > maxY && projectedVector3.y > maxY) return;
+    if (projectedVector1.x < 0 && projectedVector2.x < 0 && projectedVector3.x < 0) return;
+    if (projectedVector1.x > maxX && projectedVector2.x > maxX && projectedVector3.x > maxX) return;
 
     struct RenderOperation renderOperation = {
         .display = display,
         .triangle = triangle,
         .renderSettings = renderSettings,
-        .projectedPoints = {projectedPoint1, projectedPoint2, projectedPoint3},
+        .projectedPoints = {projectedVector1, projectedVector2, projectedVector3},
     };
 
     perform_render(&renderOperation, globalLight);
