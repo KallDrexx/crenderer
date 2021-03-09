@@ -25,6 +25,7 @@ void render_triangle(const struct KCR_Display* display,
                         const struct KCR_RenderSettings* renderSettings,
                         const struct KCR_RenderTriangle* triangle,
                         const struct KCR_GlobalLight* globalLight,
-                        const struct KCR_Matrix4* projection);
+                        const struct KCR_Matrix4* projection,
+                        float* zBuffer);
 
 #endif //CRENDERER_TRIANGLE_RENDERER_H

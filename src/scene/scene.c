@@ -37,6 +37,10 @@ bool kcr_scene_init(struct KCR_Scene* scene) {
         return false;
     }
 
+    if (kcr_mesh_load_asset(f22, "drone") == false) {
+        return false;
+    }
+
     scene->instanceList = kcr_list_create(sizeof(struct KCR_MeshInstance));
     assert(scene->instanceList != NULL);
 

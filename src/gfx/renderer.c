@@ -91,15 +91,6 @@ void update_render_mode(struct KCR_Renderer *renderer, const struct KCR_InputSta
     }
 }
 
-int sort_triangle_function(const void* a, const void* b) {
-    float depthA = ((struct KCR_RenderTriangle*) a)->averageDepth;
-    float depthB = ((struct KCR_RenderTriangle*) b)->averageDepth;
-
-    if (depthB < depthA) return 1;
-    if (depthB > depthA) return -1;
-    return 0;
-}
-
 bool kcr_renderer_init(struct KCR_Renderer *renderer, const struct KCR_Display *display) {
     assert(renderer != NULL);
     assert(display != NULL);
@@ -109,6 +100,7 @@ bool kcr_renderer_init(struct KCR_Renderer *renderer, const struct KCR_Display *
     renderer->renderMode.showWireframe = false;
     renderer->renderMode.triangleFillMode = FILL_MESH_TRI_COLORS;
     renderer->renderMode.enableBackFaceCulling = true;
+    renderer->zBuffer = malloc(sizeof(float) * display->windowWidth * display->windowHeight);
 
     return true;
 }
@@ -116,6 +108,7 @@ bool kcr_renderer_init(struct KCR_Renderer *renderer, const struct KCR_Display *
 void kcr_renderer_uninit(struct KCR_Renderer *renderer) {
     if (renderer != NULL) {
         renderer->display = NULL;
+        free(renderer->zBuffer);
     }
 }
 
@@ -129,8 +122,13 @@ void kcr_renderer_render(struct KCR_Renderer *renderer,
     assert(scene->instanceList != NULL);
     assert(scene->meshList != NULL);
     assert(inputState != NULL);
+    assert(renderer->zBuffer != NULL);
 
     update_render_mode(renderer, inputState);
+    for (int i = 0; i < renderer->display->windowHeight * renderer->display->windowWidth; i++) {
+        renderer->zBuffer[i] = 0.0;
+    }
+
     struct KCR_Matrix4 projectionMatrix = kcr_mat4_perspective(
             scene->camera.fieldOfViewRadians,
             (float) renderer->display->windowHeight / (float) renderer->display->windowWidth,
@@ -174,8 +172,6 @@ void kcr_renderer_render(struct KCR_Renderer *renderer,
         }
     }
 
-    qsort(renderer->triangles, triangleCount, sizeof(struct KCR_RenderTriangle), sort_triangle_function);
-
     for (triangleIndex = 0; triangleIndex < triangleCount; triangleIndex++) {
         struct KCR_RenderTriangle* triangle = &renderer->triangles[triangleIndex];
 
@@ -186,7 +182,7 @@ void kcr_renderer_render(struct KCR_Renderer *renderer,
             // Since the normal is pointing in generally the same direction as the vector of the face to the camera
             // then the face is facing towards the camera, and we need to render it
 
-            render_triangle(renderer->display, &renderer->renderMode, triangle, &scene->globalLight, &projectionMatrix);
+            render_triangle(renderer->display, &renderer->renderMode, triangle, &scene->globalLight, &projectionMatrix, renderer->zBuffer);
         }
     }
 }

@@ -11,6 +11,7 @@ struct RenderOperation {
     const struct KCR_RenderSettings* renderSettings;
     const struct KCR_RenderTriangle* triangle;
     const struct KCR_Vec4 projectedPoints[3];
+    float* zBuffer;
 };
 
 struct BarycentricCoords {
@@ -178,6 +179,20 @@ void perform_render(const struct RenderOperation* renderOperation,
                 continue;
             }
 
+            // Calculate the reciprocal of w's barycentric coordinates so we are able to figure the actual depth
+            // of this pixel, for checking against the z buffer.  We need to use the w value as that contains the
+            // pre-projected depth/z value of the transformed triangle, and thus this is required for perspective
+            // correct interpolation.
+            float interpolatedReciprocalW = reciprocalW[0] * coords.w0 + reciprocalW[1] * coords.w1 + reciprocalW[2] * coords.w2;
+
+            int index = kcr_display_get_pixel_index(renderOperation->display, x, y);
+            if (renderOperation->zBuffer[index] <= interpolatedReciprocalW) {
+                // Already drew a pixel from a triangle that's closer
+                continue;
+            }
+
+            renderOperation->zBuffer[index] = interpolatedReciprocalW;
+
             bool pixelDrawn = false;
             if (renderOperation->renderSettings->showWireframe) {
                 // are we on a line?
@@ -214,7 +229,7 @@ void perform_render(const struct RenderOperation* renderOperation,
 
                     case FILL_TEXTURED: {
                         // perspective correct interpolation for texture coords based on barycentric coordinates
-                        float u, v, interpolatedReciprocalW;
+                        float u, v;
 
                         // Divide each u and v value by their corresponding w (original triangle Z depth) in order to
                         // account for perspective.
@@ -223,10 +238,6 @@ void perform_render(const struct RenderOperation* renderOperation,
 
                         // Since we accounted for perspective by dividing the u and v components by w, we need to divide
                         // u and v by the interpolated reciprocal of w to undo the perspective divide.
-                        interpolatedReciprocalW = reciprocalW[0] * coords.w0 +
-                                reciprocalW[1] * coords.w1 +
-                                reciprocalW[2] * coords.w2;
-
                         u /= interpolatedReciprocalW;
                         v /= interpolatedReciprocalW;
 
@@ -277,7 +288,8 @@ void render_triangle(const struct KCR_Display* display,
                      const struct KCR_RenderSettings* renderSettings,
                      const struct KCR_RenderTriangle* triangle,
                      const struct KCR_GlobalLight* globalLight,
-                     const struct KCR_Matrix4* projection) {
+                     const struct KCR_Matrix4* projection,
+                     float* zBuffer) {
     struct KCR_Vec4 projectedVector1 = perform_projection(projection, &triangle->vertexPositions[0]);
     struct KCR_Vec4 projectedVector2 = perform_projection(projection, &triangle->vertexPositions[1]);
     struct KCR_Vec4 projectedVector3 = perform_projection(projection, &triangle->vertexPositions[2]);
@@ -299,6 +311,7 @@ void render_triangle(const struct KCR_Display* display,
         .triangle = triangle,
         .renderSettings = renderSettings,
         .projectedPoints = {projectedVector1, projectedVector2, projectedVector3},
+        .zBuffer = zBuffer,
     };
 
     perform_render(&renderOperation, globalLight);

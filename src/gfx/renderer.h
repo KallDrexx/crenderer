@@ -15,6 +15,7 @@ struct KCR_Renderer {
     const struct KCR_Display* display;
     struct KCR_RenderSettings renderMode;
     struct KCR_RenderTriangle* triangles;
+    float* zBuffer;
 };
 
 /*
