@@ -42,8 +42,8 @@ void process_input(void) {
     }
 }
 
-void update(float timeDelta) {
-    kcr_scene_update(&scene, &inputState, timeDelta);
+void update(float timeDelta, struct KCR_Display* display) {
+    kcr_scene_update(&scene, &inputState, timeDelta, display);
 }
 
 void render(void) {
@@ -66,7 +66,7 @@ int main(__attribute__((unused)) int argc, __attribute__((unused))char *argv[]) 
         previousFrameTime = SDL_GetTicks();
 
         process_input();
-        update(timeDelta);
+        update(timeDelta, &display);
         render();
     }
 

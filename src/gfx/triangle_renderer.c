@@ -166,6 +166,10 @@ void perform_render(const struct RenderOperation* renderOperation,
 
     for (int x = boundary.minX; x <= boundary.maxX; x++) {
         for (int y = boundary.minY; y <= boundary.maxY; y++) {
+            if (x < 0 || x >= renderOperation->display->windowWidth || y < 0 || y >= renderOperation->display->windowHeight) {
+                continue;
+            }
+
             struct KCR_Vec4 point = {.x = (float) x, .y = (float) y, .z = 0, .w = 0};
 
             struct BarycentricCoords coords = get_barycentric_coords(&renderOperation->projectedPoints[0],

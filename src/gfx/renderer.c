@@ -146,7 +146,9 @@ void kcr_renderer_render(struct KCR_Renderer *renderer,
     if (listLength < triangleCount && newTriangles > 0) {
         kcr_list_new_items((void**) &renderer->triangles, newTriangles);
     }
-    
+
+    struct KCR_Matrix4 viewTransform = kcr_camera_view_matrix(&scene->camera);
+
     size_t triangleIndex = 0;
     for (size_t i = 0; i < kcr_list_length(scene->instanceList); i++) {
         struct KCR_MeshInstance* instance = &scene->instanceList[i];
@@ -162,6 +164,7 @@ void kcr_renderer_render(struct KCR_Renderer *renderer,
         transform = kcr_mat4_mult(&rotationY, &transform);
         transform = kcr_mat4_mult(&rotationX, &transform);
         transform = kcr_mat4_mult(&translation, &transform);
+        transform = kcr_mat4_mult(&viewTransform, &transform);
         
         for (size_t f = 0; f < kcr_list_length(instance->mesh->faceList); f++) {
             struct KCR_RenderTriangle* renderTriangle = &renderer->triangles[triangleIndex];

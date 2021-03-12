@@ -5,16 +5,7 @@
 #include "../input.h"
 #include "mesh.h"
 #include "lighting.h"
-
-/*
- * Represents a camera in the scene
- */
-struct KCR_Camera {
-    struct KCR_Vec3 position;
-    float fieldOfViewRadians;
-    float zNear;
-    float zFar;
-};
+#include "camera.h"
 
 /*
  * Structure representing all objects in the scene, including the camera.
@@ -36,7 +27,7 @@ bool kcr_scene_init(struct KCR_Scene* scene);
  * Updates the scene for the current frame based on the inputs the user has made and the time since
  * the last frame.
  */
-void kcr_scene_update(struct KCR_Scene* scene, const struct KCR_InputState* inputState, float timeDelta);
+void kcr_scene_update(struct KCR_Scene* scene, const struct KCR_InputState* inputState, float timeDelta, struct KCR_Display* display);
 
 /*
  * Un-initializes the scene, freeing any memory the scene itself might have allocated.  The scene itself

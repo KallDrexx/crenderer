@@ -30,6 +30,10 @@ struct KCR_InputState {
     bool c_pressed : 1;
     bool page_down_down : 1;
     bool page_up_down : 1;
+    bool w_down : 1;
+    bool s_down : 1;
+    bool a_down : 1;
+    bool d_down : 1;
     int32_t mouse_drag_x;
     int32_t mouse_drag_y;
     int32_t mouse_wheel_amount;

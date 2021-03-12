@@ -102,6 +102,22 @@ void handle_keyup_event(struct KCR_InputState *state, SDL_Event *event) {
         case SDLK_PAGEDOWN:
             state->page_down_down = false;
             break;
+
+        case SDLK_a:
+            state->a_down = false;
+            break;
+
+        case SDLK_w:
+            state->w_down = false;
+            break;
+
+        case SDLK_s:
+            state->s_down = false;
+            break;
+
+        case SDLK_d:
+            state->d_down = false;
+            break;
     }
 }
 
@@ -145,6 +161,22 @@ void handle_keydown_event(struct KCR_InputState *state, SDL_Event *event) {
 
         case SDLK_PAGEDOWN:
             state->page_down_down = true;
+            break;
+
+        case SDLK_a:
+            state->a_down = true;
+            break;
+
+        case SDLK_w:
+            state->w_down = true;
+            break;
+
+        case SDLK_s:
+            state->s_down = true;
+            break;
+
+        case SDLK_d:
+            state->d_down = true;
             break;
     }
 }

@@ -1,6 +1,8 @@
 #ifndef CRENDERER_VECTOR_H
 #define CRENDERER_VECTOR_H
 
+#include <math.h>
+
 /*
  * A vector with 2 components
  */
@@ -67,6 +69,17 @@ struct KCR_Vec3 kcr_vec3_cross(const struct KCR_Vec3 *first, const struct KCR_Ve
  * Normalizes a KCR_Vec3 to create a unit vector, producing a new KCR_Vec3 with the result
  */
 struct KCR_Vec3 kcr_vec3_normalize(const struct KCR_Vec3* vector);
+
+/*
+ * Rotates a 3 component vector around the y axis
+ */
+static inline struct KCR_Vec3 kcr_vec3_rotate_y(const struct KCR_Vec3* vector, float radians) {
+    return (struct KCR_Vec3) {
+        .x = vector->z * sinf(radians) + vector->x * cosf(radians),
+        .y = vector->y,
+        .z = vector->z * cosf(radians) - vector->x * sinf(radians),
+    };
+}
 
 /*
  * Subtracts two 4 component vectors
