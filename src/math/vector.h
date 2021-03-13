@@ -71,13 +71,35 @@ struct KCR_Vec3 kcr_vec3_cross(const struct KCR_Vec3 *first, const struct KCR_Ve
 struct KCR_Vec3 kcr_vec3_normalize(const struct KCR_Vec3* vector);
 
 /*
+ * Rotates a 3 component vector around the z axis
+ */
+static inline struct KCR_Vec3 kcr_vec3_rotate_z(const struct KCR_Vec3* vector, float angle) {
+    return (struct KCR_Vec3) {
+            .x = vector->x,
+            .y = vector->y * cosf(angle) - vector->z * sinf(angle),
+            .z = vector->y * sinf(angle) + vector->z * cosf(angle),
+    };
+}
+
+/*
  * Rotates a 3 component vector around the y axis
  */
-static inline struct KCR_Vec3 kcr_vec3_rotate_y(const struct KCR_Vec3* vector, float radians) {
+static inline struct KCR_Vec3 kcr_vec3_rotate_y(const struct KCR_Vec3* vector, float angle) {
     return (struct KCR_Vec3) {
-        .x = vector->z * sinf(radians) + vector->x * cosf(radians),
+        .x = vector->z * sinf(angle) + vector->x * cosf(angle),
         .y = vector->y,
-        .z = vector->z * cosf(radians) - vector->x * sinf(radians),
+        .z = vector->z * cosf(angle) - vector->x * sinf(angle),
+    };
+}
+
+/*
+ * Rotates a 3 component vector around the x axis
+ */
+static inline struct KCR_Vec3 kcr_vec3_rotate_x(const struct KCR_Vec3* vector, float angle) {
+    return (struct KCR_Vec3) {
+            .x = vector->x,
+            .y = vector->y * cosf(angle) - vector->z * sinf(angle),
+            .z = vector->y * sinf(angle) + vector->z * cosf(angle),
     };
 }
 

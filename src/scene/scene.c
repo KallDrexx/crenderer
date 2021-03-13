@@ -47,6 +47,12 @@ bool kcr_scene_init(struct KCR_Scene* scene) {
     instance->position.y = 0;
     instance->position.z = -10;
 
+    instance = kcr_list_new_item((void**) &scene->instanceList);
+    kcr_mesh_instance_init(instance, &scene->meshList[meshIndex % kcr_list_length(scene->meshList)]);
+    instance->position.x = 5;
+    instance->position.y = 5;
+    instance->position.z = -10;
+
     return true;
 }
 
@@ -66,27 +72,41 @@ void kcr_scene_update(struct KCR_Scene* scene, const struct KCR_InputState* inpu
         meshChanged = true;
     }
 
+    struct KCR_Camera_Orientation orientation = kcr_camera_orientation(&scene->camera);
+
     struct KCR_Vec3 cameraMovement = {0, 0, 0};
     if (inputState->w_down) {
-        struct KCR_Vec3 move = kcr_vec3_mult(&scene->camera.forward, MOVE_SPEED);
+        struct KCR_Vec3 move = kcr_vec3_mult(&orientation.forward, MOVE_SPEED);
         move = kcr_vec3_mult(&move, timeDelta);
         cameraMovement = kcr_vec3_add(&cameraMovement, &move);
     }
 
     if (inputState->s_down) {
-        struct KCR_Vec3 move = kcr_vec3_mult(&scene->camera.forward, -MOVE_SPEED);
+        struct KCR_Vec3 move = kcr_vec3_mult(&orientation.forward, -MOVE_SPEED);
         move = kcr_vec3_mult(&move, timeDelta);
         cameraMovement = kcr_vec3_add(&cameraMovement, &move);
     }
 
     if (inputState->a_down) {
-        struct KCR_Vec3 move = kcr_vec3_mult(&scene->camera.right, -MOVE_SPEED);
+        struct KCR_Vec3 move = kcr_vec3_mult(&orientation.right, -MOVE_SPEED);
         move = kcr_vec3_mult(&move, timeDelta);
         cameraMovement = kcr_vec3_add(&cameraMovement, &move);
     }
 
     if (inputState->d_down) {
-        struct KCR_Vec3 move = kcr_vec3_mult(&scene->camera.right, MOVE_SPEED);
+        struct KCR_Vec3 move = kcr_vec3_mult(&orientation.right, MOVE_SPEED);
+        move = kcr_vec3_mult(&move, timeDelta);
+        cameraMovement = kcr_vec3_add(&cameraMovement, &move);
+    }
+
+    if (inputState->page_up_down) {
+        struct KCR_Vec3 move = kcr_vec3_mult(&orientation.up, -MOVE_SPEED);
+        move = kcr_vec3_mult(&move, timeDelta);
+        cameraMovement = kcr_vec3_add(&cameraMovement, &move);
+    }
+
+    if (inputState->page_down_down) {
+        struct KCR_Vec3 move = kcr_vec3_mult(&orientation.up, MOVE_SPEED);
         move = kcr_vec3_mult(&move, timeDelta);
         cameraMovement = kcr_vec3_add(&cameraMovement, &move);
     }
@@ -95,9 +115,12 @@ void kcr_scene_update(struct KCR_Scene* scene, const struct KCR_InputState* inpu
 
     if (inputState->left_mouse_down) {
         float percentRight = (float) inputState->mouse_drag_x / (float) display->windowWidth;
+        float percentUp = (float) inputState->mouse_drag_y / (float) display->windowHeight;
         float angleRight = scene->camera.fieldOfViewRadians * percentRight * 2;
-        scene->camera.forward = kcr_vec3_rotate_y(&scene->camera.forward, angleRight);
-        scene->camera.right = kcr_vec3_rotate_y(&scene->camera.right, angleRight);
+        float angleUp = scene->camera.fieldOfViewRadians * percentUp;
+
+        scene->camera.yaw += angleRight;
+        scene->camera.pitch -= angleUp;
     }
 
     for (size_t i = 0; i < kcr_list_length(scene->instanceList); i++) {
