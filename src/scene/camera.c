@@ -6,8 +6,7 @@
 bool kcr_camera_init(struct KCR_Camera* camera) {
     assert(camera != NULL);
 
-    camera->yaw = 0;
-    camera->pitch = 0;
+    camera->rotation = (struct KCR_Vec3) {0, 0, 0};
     camera->position = (struct KCR_Vec3) {0, 0, 0};
     camera->fieldOfViewRadians = kcr_degrees_to_radians(60);
     camera->zNear = 1.0f;
@@ -48,14 +47,16 @@ struct KCR_Camera_Orientation kcr_camera_orientation(const struct KCR_Camera *ca
             (struct KCR_Vec3) {0, 1, 0},
     };
 
-    result.forward = kcr_vec3_rotate_y(&result.forward, camera->yaw);
-    result.forward = kcr_vec3_rotate_x(&result.forward, camera->pitch);
+    struct KCR_Matrix4 rotationX = kcr_mat4_rotation_x(camera->rotation.x);
+    struct KCR_Matrix4 rotationY = kcr_mat4_rotation_y(camera->rotation.y);
+    struct KCR_Matrix4 rotationZ = kcr_mat4_rotation_z(camera->rotation.z);
 
-    result.up = kcr_vec3_rotate_y(&result.up, camera->yaw);
-    result.up = kcr_vec3_rotate_x(&result.up, camera->pitch);
+    struct KCR_Matrix4 rotation = kcr_mat4_mult(&rotationY, &rotationZ);
+    rotation = kcr_mat4_mult(&rotationX, &rotation);
 
-    result.right = kcr_vec3_rotate_y(&result.right, camera->yaw);
-    result.right = kcr_vec3_rotate_x(&result.right, camera->pitch);
+    result.forward = kcr_mat4_vec3_mult(&rotation, &result.forward);
+    result.up = kcr_mat4_vec3_mult(&rotation, &result.up);
+    result.right = kcr_mat4_vec3_mult(&rotation, &result.right);
 
     return result;
 }

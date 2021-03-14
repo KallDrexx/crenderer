@@ -115,8 +115,8 @@ void process_camera_inputs(struct KCR_Scene *scene, const struct KCR_InputState 
         float angleRight = scene->camera.fieldOfViewRadians * percentRight * 2;
         float angleUp = scene->camera.fieldOfViewRadians * percentUp;
 
-        scene->camera.yaw += angleRight;
-        scene->camera.pitch -= angleUp;
+        scene->camera.rotation.y += angleRight;
+        scene->camera.rotation.x -= angleUp;
     }
 }
 

@@ -10,8 +10,7 @@
  */
 struct KCR_Camera {
     struct KCR_Vec3 position;
-    float pitch;
-    float yaw;
+    struct KCR_Vec3 rotation;
     float fieldOfViewRadians;
     float zNear;
     float zFar;
