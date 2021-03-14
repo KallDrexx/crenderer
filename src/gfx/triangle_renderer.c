@@ -298,6 +298,20 @@ void render_triangle(const struct KCR_Display* display,
     struct KCR_Vec4 projectedVector2 = perform_projection(projection, &triangle->vertexPositions[1]);
     struct KCR_Vec4 projectedVector3 = perform_projection(projection, &triangle->vertexPositions[2]);
 
+    // Since we are using perspective correction, this means that a triangle normal in 3d space may be facing away
+    // from the camera, but is still visible in the periphery of our view.  This means if we have to do backface
+    // culling *after* perspective projection occurred.  While this gives us a flat screen space triangle, it will
+    // either be facing directly towards or away from the eye.  So we can use the cross product to know which.
+    struct KCR_Vec3 pv1 = kcr_vec3_from_vec4(&projectedVector1);
+    struct KCR_Vec3 pv2 = kcr_vec3_from_vec4(&projectedVector2);
+    struct KCR_Vec3 pv3 = kcr_vec3_from_vec4(&projectedVector3);
+    struct KCR_Vec3 cv1 = kcr_vec3_sub(&pv2, &pv1);
+    struct KCR_Vec3 cv2 = kcr_vec3_sub(&pv3, &pv1);
+    struct KCR_Vec3 cross = kcr_vec3_cross(&cv1, &cv2);
+    if (!renderSettings->enableBackFaceCulling && cross.z > 0) {
+        return;
+    }
+
     adjust_to_screen_space(display, &projectedVector1);
     adjust_to_screen_space(display, &projectedVector2);
     adjust_to_screen_space(display, &projectedVector3);

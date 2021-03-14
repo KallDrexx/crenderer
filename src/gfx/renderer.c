@@ -89,6 +89,10 @@ void update_render_mode(struct KCR_Renderer *renderer, const struct KCR_InputSta
                 break;
         }
     }
+
+    if (inputState->c_pressed) {
+        renderer->renderMode.enableBackFaceCulling = !renderer->renderMode.enableBackFaceCulling;
+    }
 }
 
 bool kcr_renderer_init(struct KCR_Renderer *renderer, const struct KCR_Display *display) {
@@ -176,16 +180,10 @@ void kcr_renderer_render(struct KCR_Renderer *renderer,
     }
 
     for (triangleIndex = 0; triangleIndex < triangleCount; triangleIndex++) {
+//        if (triangleIndex != 8) continue;;
         struct KCR_RenderTriangle* triangle = &renderer->triangles[triangleIndex];
 
-        const struct KCR_Vec3 vertexToCameraVector = kcr_vec3_sub(&triangle->vertexPositions[0], &scene->camera.position);
-        const float vertexCameraAlignment = kcr_vec3_dot(&triangle->normalizedTriangleNormal, &vertexToCameraVector);
-
-        if (!renderer->renderMode.enableBackFaceCulling || vertexCameraAlignment > 0) {
-            // Since the normal is pointing in generally the same direction as the vector of the face to the camera
-            // then the face is facing towards the camera, and we need to render it
-
-            render_triangle(renderer->display, &renderer->renderMode, triangle, &scene->globalLight, &projectionMatrix, renderer->zBuffer);
-        }
+//        const float alignment = kcr_vec3_dot(&triangle->normalizedTriangleNormal, &cameraOrientation.forward);
+        render_triangle(renderer->display, &renderer->renderMode, triangle, &scene->globalLight, &projectionMatrix, renderer->zBuffer);
     }
 }

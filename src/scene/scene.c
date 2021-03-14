@@ -1,6 +1,7 @@
 #include <assert.h>
 #include "scene.h"
 #include "../list.h"
+#define MOVE_SPEED 5.0f
 
 size_t meshIndex = 0;
 
@@ -9,6 +10,7 @@ bool kcr_scene_init(struct KCR_Scene* scene) {
 
     scene->camera = (struct KCR_Camera) {0};
     kcr_camera_init(&scene->camera);
+
     scene->globalLight.direction.x = 1;
     scene->globalLight.direction.y = -1;
     scene->globalLight.direction.z = -1;
@@ -56,21 +58,8 @@ bool kcr_scene_init(struct KCR_Scene* scene) {
     return true;
 }
 
-void kcr_scene_update(struct KCR_Scene* scene, const struct KCR_InputState* inputState, float timeDelta, struct KCR_Display* display) {
-    #define KEYBOARD_ROTATION_SPEED 1.0f
-    #define MOUSE_ROTATION_SPEED 0.01f
-    #define MOVE_SPEED 5.0f
-
-    bool meshChanged = false;
-    if (inputState->f1_pressed && meshIndex > 0) {
-        meshIndex--;
-        meshChanged = true;
-    }
-
-    if (inputState->f2_pressed) {
-        meshIndex++;
-        meshChanged = true;
-    }
+void process_camera_inputs(struct KCR_Scene *scene, const struct KCR_InputState *inputState, float timeDelta,
+                           const struct KCR_Display *display) {
 
     struct KCR_Camera_Orientation orientation = kcr_camera_orientation(&scene->camera);
 
@@ -111,6 +100,13 @@ void kcr_scene_update(struct KCR_Scene* scene, const struct KCR_InputState* inpu
         cameraMovement = kcr_vec3_add(&cameraMovement, &move);
     }
 
+    if (inputState->mouse_wheel_amount != 0) {
+        float amount = inputState->mouse_wheel_amount > 0 ? -MOVE_SPEED : MOVE_SPEED;
+        struct KCR_Vec3 move = kcr_vec3_mult(&orientation.up, amount);
+        move = kcr_vec3_mult(&move, timeDelta);
+        cameraMovement = kcr_vec3_add(&cameraMovement, &move);
+    }
+
     scene->camera.position = kcr_vec3_add(&scene->camera.position, &cameraMovement);
 
     if (inputState->left_mouse_down) {
@@ -122,6 +118,21 @@ void kcr_scene_update(struct KCR_Scene* scene, const struct KCR_InputState* inpu
         scene->camera.yaw += angleRight;
         scene->camera.pitch -= angleUp;
     }
+}
+
+void kcr_scene_update(struct KCR_Scene* scene, const struct KCR_InputState* inputState, float timeDelta, struct KCR_Display* display) {
+    bool meshChanged = false;
+    if (inputState->f1_pressed && meshIndex > 0) {
+        meshIndex--;
+        meshChanged = true;
+    }
+
+    if (inputState->f2_pressed) {
+        meshIndex++;
+        meshChanged = true;
+    }
+
+    process_camera_inputs(scene, inputState, timeDelta, display);
 
     for (size_t i = 0; i < kcr_list_length(scene->instanceList); i++) {
         struct KCR_MeshInstance *instance = &scene->instanceList[i];
