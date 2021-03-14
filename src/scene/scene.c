@@ -5,11 +5,11 @@
 
 size_t meshIndex = 0;
 
-bool kcr_scene_init(struct KCR_Scene* scene) {
+bool kcr_scene_init(struct KCR_Scene* scene, const struct KCR_Display* display) {
     assert(scene != NULL);
 
     scene->camera = (struct KCR_Camera) {0};
-    kcr_camera_init(&scene->camera);
+    kcr_camera_init(&scene->camera, display);
 
     scene->globalLight.direction.x = 1;
     scene->globalLight.direction.y = -1;
@@ -45,8 +45,8 @@ bool kcr_scene_init(struct KCR_Scene* scene) {
 
     struct KCR_MeshInstance* instance = kcr_list_new_item((void**) &scene->instanceList);
     kcr_mesh_instance_init(instance, &scene->meshList[meshIndex % kcr_list_length(scene->meshList)]);
-    instance->position.x = 3;
-    instance->position.y = 3;
+    instance->position.x = 4;
+    instance->position.y = 4;
     instance->position.z = 10;
 
 //    instance = kcr_list_new_item((void**) &scene->instanceList);
@@ -108,6 +108,7 @@ void process_camera_inputs(struct KCR_Scene *scene, const struct KCR_InputState 
     }
 
     scene->camera.position = kcr_vec3_add(&scene->camera.position, &cameraMovement);
+//    scene->instanceList[0].rotation.y += 0.5f * timeDelta;
 
     if (inputState->left_mouse_down) {
         float percentRight = (float) inputState->mouse_drag_x / (float) display->windowWidth;

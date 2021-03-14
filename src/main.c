@@ -21,7 +21,7 @@ bool setup(void) {
         return false;
     }
 
-    if (kcr_scene_init(&scene) == false) {
+    if (kcr_scene_init(&scene, &display) == false) {
         fprintf(stderr, "Failed to initialize scene\n");
         return false;
     }

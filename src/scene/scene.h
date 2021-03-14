@@ -21,7 +21,7 @@ struct KCR_Scene {
  * Initializes a not-yet initialized instance of a scene with default values.  If a scene is passed in
  * that has been initialized but not uninitialized than memory leaks will occur.
  */
-bool kcr_scene_init(struct KCR_Scene* scene);
+bool kcr_scene_init(struct KCR_Scene* scene, const struct KCR_Display* display);
 
 /*
  * Updates the scene for the current frame based on the inputs the user has made and the time since

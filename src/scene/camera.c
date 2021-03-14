@@ -1,16 +1,18 @@
 #include <assert.h>
-#include <stdlib.h>
+#include <math.h>
 #include "camera.h"
 #include "../math/angles.h"
 
-bool kcr_camera_init(struct KCR_Camera* camera) {
+bool kcr_camera_init(struct KCR_Camera* camera, const struct KCR_Display* display) {
     assert(camera != NULL);
 
     camera->rotation = (struct KCR_Vec3) {0, 0, 0};
     camera->position = (struct KCR_Vec3) {0, 0, 0};
-    camera->fieldOfViewRadians = kcr_degrees_to_radians(60);
+    camera->fieldOfViewRadians = kcr_degrees_to_radians(90);
     camera->zNear = 1.0f;
     camera->zFar = 100.0f;
+
+    kcr_camera_update_frustum(camera, display);
 
     return true;
 }
@@ -59,4 +61,55 @@ struct KCR_Camera_Orientation kcr_camera_orientation(const struct KCR_Camera *ca
     result.right = kcr_mat4_vec3_mult(&rotation, &result.right);
 
     return result;
+}
+
+void kcr_camera_update_frustum(struct KCR_Camera *camera, const struct KCR_Display* display) {
+    camera->viewFrustum.planes[PLANE_NEAR] = (struct KCR_Plane) {
+        .point = (struct KCR_Vec3) {0, 0, camera->zNear},
+        .normal = (struct KCR_Vec3) {0, 0, 1},
+    };
+
+    camera->viewFrustum.planes[PLANE_FAR] = (struct KCR_Plane) {
+        .point = (struct KCR_Vec3) {0, 0, camera->zFar},
+        .normal = (struct KCR_Vec3) {0, 0, -1},
+    };
+
+    camera->viewFrustum.planes[PLANE_RIGHT] = (struct KCR_Plane) {
+        .point = (struct KCR_Vec3) {0, 0, 0},
+        .normal = (struct KCR_Vec3) {
+            .x = -cosf(camera->fieldOfViewRadians / 2),
+            .y = 0,
+            .z = sinf(camera->fieldOfViewRadians / 2),
+        },
+    };
+
+    camera->viewFrustum.planes[PLANE_LEFT] = (struct KCR_Plane) {
+        .point = (struct KCR_Vec3) {0, 0, 0},
+        .normal = (struct KCR_Vec3) {
+            .x = -camera->viewFrustum.planes[PLANE_RIGHT].normal.x,
+            .y = 0,
+            .z = camera->viewFrustum.planes[PLANE_RIGHT].normal.z,
+        },
+    };
+
+    float aspectRatio = (float) display->windowWidth / (float) display->windowHeight;
+    float verticalFov = camera->fieldOfViewRadians * aspectRatio;
+
+    camera->viewFrustum.planes[PLANE_TOP] = (struct KCR_Plane) {
+        .point = (struct KCR_Vec3) {0, 0, 0},
+        .normal = (struct KCR_Vec3) {
+            .x = 0,
+            .y = -cosf(verticalFov / 2),
+            .z = sinf(verticalFov / 2),
+        },
+    };
+
+    camera->viewFrustum.planes[PLANE_BOTTOM] = (struct KCR_Plane) {
+            .point = (struct KCR_Vec3) {0, 0, 0},
+            .normal = (struct KCR_Vec3) {
+                    .x = 0,
+                    .y = -camera->viewFrustum.planes[PLANE_TOP].normal.y,
+                    .z = camera->viewFrustum.planes[PLANE_TOP].normal.z,
+            },
+    };
 }

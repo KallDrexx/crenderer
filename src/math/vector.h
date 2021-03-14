@@ -163,12 +163,32 @@ static inline struct KCR_Vec2 kcr_vec2_sub(const struct KCR_Vec2* first, const s
 }
 
 /*
+ * Adds a 2 component vector from another
+ */
+static inline struct KCR_Vec2 kcr_vec2_add(const struct KCR_Vec2* first, const struct KCR_Vec2* second) {
+    return (struct KCR_Vec2) {
+            .x = first->x + second->x,
+            .y = first->y + second->y,
+    };
+}
+
+/*
  * Divides a 2 component vector by a scalar
  */
 static inline struct KCR_Vec2 kcr_vec2_div(const struct KCR_Vec2* vec, float scalar) {
     return (struct KCR_Vec2) {
         .x = vec->x / scalar,
         .y = vec->y / scalar,
+    };
+}
+
+/*
+ * Multiplies a 2 component vector by a scalar
+ */
+static inline struct KCR_Vec2 kcr_vec2_mult(const struct KCR_Vec2* vec, float scalar) {
+    return (struct KCR_Vec2) {
+            .x = vec->x * scalar,
+            .y = vec->y * scalar,
     };
 }
 

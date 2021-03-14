@@ -244,8 +244,8 @@ void perform_render(const struct RenderOperation* renderOperation,
                         u /= interpolatedReciprocalW;
                         v /= interpolatedReciprocalW;
 
-                        uint32_t index = kcr_texture_texel_index(renderOperation->triangle->texture, u, v);
-                        color = renderOperation->triangle->texture->texels[index];
+                        uint32_t uvIndex = kcr_texture_texel_index(renderOperation->triangle->texture, u, v);
+                        color = renderOperation->triangle->texture->texels[uvIndex];
                         break;
                     }
                 }
@@ -307,7 +307,7 @@ void render_triangle(const struct KCR_Display* display,
     struct KCR_Vec3 cv1 = kcr_vec3_sub(&pv2, &pv1);
     struct KCR_Vec3 cv2 = kcr_vec3_sub(&pv3, &pv1);
     struct KCR_Vec3 cross = kcr_vec3_cross(&cv1, &cv2);
-    if (!renderSettings->enableBackFaceCulling && cross.z > 0) {
+    if (renderSettings->enableBackFaceCulling && cross.z < 0) {
         return;
     }
 
@@ -315,7 +315,7 @@ void render_triangle(const struct KCR_Display* display,
     adjust_to_screen_space(display, &projectedVector2);
     adjust_to_screen_space(display, &projectedVector3);
 
-    // Ignore triangles outside screen boundaries
+    // Ignore triangleBuffer outside screen boundaries
     float maxY = (float) display->windowHeight;
     float maxX = (float) display->windowWidth;
     if (projectedVector1.y < 0 && projectedVector2.y < 0 && projectedVector3.y < 0) return;

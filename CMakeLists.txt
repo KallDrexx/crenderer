@@ -9,7 +9,7 @@ include_directories(${SDL2_INCLUDE_DIR})
 
 set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra")
 
-add_executable(crenderer src/main.c src/gfx/display.h src/gfx/display.c src/input.h src/input.c src/math/vector.c src/math/vector.h src/scene/scene.c src/scene/scene.h src/scene/mesh.c src/scene/mesh.h src/gfx/renderer.c src/gfx/renderer.h src/math/angles.h src/list.c src/list.h src/math/matrix.c src/math/matrix.h src/gfx/triangle_renderer.c src/gfx/triangle_renderer.h src/gfx/render_settings.h src/scene/lighting.h src/scene/texture.c src/scene/texture.h src/scene/upng.c src/scene/upng.h src/scene/camera.c src/scene/camera.h)
+add_executable(crenderer src/main.c src/gfx/display.h src/gfx/display.c src/input.h src/input.c src/math/vector.c src/math/vector.h src/scene/scene.c src/scene/scene.h src/scene/mesh.c src/scene/mesh.h src/gfx/renderer.c src/gfx/renderer.h src/math/angles.h src/list.c src/list.h src/math/matrix.c src/math/matrix.h src/gfx/triangle_renderer.c src/gfx/triangle_renderer.h src/gfx/render_settings.h src/scene/lighting.h src/scene/texture.c src/scene/texture.h src/scene/upng.c src/scene/upng.h src/scene/camera.c src/scene/camera.h src/gfx/clipping.c src/gfx/clipping.h)
 
 target_link_libraries(crenderer ${SDL2_LIBRARY})
 

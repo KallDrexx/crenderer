@@ -1,9 +1,10 @@
 #include <math.h>
 #include <assert.h>
 #include <stdlib.h>
+#include <string.h>
 #include "renderer.h"
-#include "triangle_renderer.h"
 #include "../list.h"
+#include "clipping.h"
 
 #define SWAP(FIRST, SECOND, TYPE) do {TYPE SWAP = FIRST; FIRST = SECOND; SECOND = SWAP;} while(0)
 
@@ -100,7 +101,7 @@ bool kcr_renderer_init(struct KCR_Renderer *renderer, const struct KCR_Display *
     assert(display != NULL);
 
     renderer->display = display;
-    renderer->triangles = kcr_list_create(sizeof(struct KCR_RenderTriangle));
+    renderer->triangleBuffer = kcr_list_create(sizeof(struct KCR_RenderTriangle));
     renderer->renderMode.showWireframe = false;
     renderer->renderMode.triangleFillMode = FILL_MESH_TRI_COLORS;
     renderer->renderMode.enableBackFaceCulling = true;
@@ -133,27 +134,15 @@ void kcr_renderer_render(struct KCR_Renderer *renderer,
         renderer->zBuffer[i] = 0.0f;
     }
 
+    struct KCR_Matrix4 viewTransform = kcr_camera_view_matrix(&scene->camera);
     struct KCR_Matrix4 projectionMatrix = kcr_mat4_perspective(
             scene->camera.fieldOfViewRadians,
             (float) renderer->display->windowWidth / (float) renderer->display->windowHeight,
             scene->camera.zNear,
             scene->camera.zFar
         );
-    
-    size_t triangleCount = 0;
-    for (size_t i = 0; i < kcr_list_length(scene->instanceList); i++) {
-        triangleCount += kcr_list_length(scene->instanceList[i].mesh->faceList);
-    }
 
-    size_t listLength = kcr_list_length(renderer->triangles);
-    size_t newTriangles = triangleCount - kcr_list_length(renderer->triangles);
-    if (listLength < triangleCount && newTriangles > 0) {
-        kcr_list_new_items((void**) &renderer->triangles, newTriangles);
-    }
-
-    struct KCR_Matrix4 viewTransform = kcr_camera_view_matrix(&scene->camera);
-
-    size_t triangleIndex = 0;
+    kcr_list_clear(renderer->triangleBuffer);
     for (size_t i = 0; i < kcr_list_length(scene->instanceList); i++) {
         struct KCR_MeshInstance* instance = &scene->instanceList[i];
         struct KCR_Matrix4 scale = kcr_mat4_scale(instance->scale.x, instance->scale.y, instance->scale.z);
@@ -171,19 +160,18 @@ void kcr_renderer_render(struct KCR_Renderer *renderer,
         transform = kcr_mat4_mult(&viewTransform, &transform);
         
         for (size_t f = 0; f < kcr_list_length(instance->mesh->faceList); f++) {
-            struct KCR_RenderTriangle* renderTriangle = &renderer->triangles[triangleIndex];
+            struct KCR_RenderTriangle renderTriangle;
             const struct KCR_Face* face = &instance->mesh->faceList[f];
 
-            transform_face(renderTriangle, face, instance->mesh, &transform);
-            triangleIndex++;
+            transform_face(&renderTriangle, face, instance->mesh, &transform);
+            kcr_clipping_clip_triangle(&renderTriangle, &scene->camera.viewFrustum, &renderer->triangleBuffer);
         }
     }
 
-    for (triangleIndex = 0; triangleIndex < triangleCount; triangleIndex++) {
-//        if (triangleIndex != 8) continue;;
-        struct KCR_RenderTriangle* triangle = &renderer->triangles[triangleIndex];
+    uint32_t triangleCount = kcr_list_length(renderer->triangleBuffer);
+    for (size_t triangleIndex = 0; triangleIndex < triangleCount; triangleIndex++) {
+        struct KCR_RenderTriangle* triangle = &renderer->triangleBuffer[triangleIndex];
 
-//        const float alignment = kcr_vec3_dot(&triangle->normalizedTriangleNormal, &cameraOrientation.forward);
         render_triangle(renderer->display, &renderer->renderMode, triangle, &scene->globalLight, &projectionMatrix, renderer->zBuffer);
     }
 }
