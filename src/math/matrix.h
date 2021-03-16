@@ -43,7 +43,7 @@ struct KCR_Matrix4 kcr_mat4_rotation_z(float angleInRadians);
 /*
  * Creates a 4x4 matrix representing a perspective projection matrix
  */
-struct KCR_Matrix4 kcr_mat4_perspective(float fieldOfView, float aspectRatio, float zNear, float zFar);
+struct KCR_Matrix4 kcr_mat4_perspective(float horizontalFov, float aspectRatio, float zNear, float zFar);
 
 /*
  * Multiplies two 4x4 matrices together

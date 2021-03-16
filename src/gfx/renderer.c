@@ -135,7 +135,7 @@ void kcr_renderer_render(struct KCR_Renderer *renderer,
 
     struct KCR_Matrix4 projectionMatrix = kcr_mat4_perspective(
             scene->camera.fieldOfViewRadians,
-            (float) renderer->display->windowHeight / (float) renderer->display->windowWidth,
+            (float) renderer->display->windowWidth / (float) renderer->display->windowHeight,
             scene->camera.zNear,
             scene->camera.zFar
         );

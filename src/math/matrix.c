@@ -92,14 +92,14 @@ struct KCR_Matrix4 kcr_mat4_rotation_z(float angleInRadians) {
     return matrix;
 }
 
-struct KCR_Matrix4 kcr_mat4_perspective(float fieldOfView, float aspectRatio, float zNear, float zFar) {
+struct KCR_Matrix4 kcr_mat4_perspective(float horizontalFov, float aspectRatio, float zNear, float zFar) {
     struct KCR_Matrix4 matrix = kcr_mat4_identity();
-    float fovFactor = 1 / tanf(fieldOfView / 2);
+    float fovFactor = 1 / tanf(horizontalFov / 2);
     float depthRatio = zFar / (zFar - zNear);
     float depthOffset = -(zFar * zNear) / (zFar - zNear);
 
-    matrix.m[0][0] = aspectRatio * fovFactor;
-    matrix.m[1][1] = fovFactor;
+    matrix.m[0][0] = fovFactor;
+    matrix.m[1][1] = aspectRatio * fovFactor;
     matrix.m[2][2] = depthRatio;
     matrix.m[2][3] = depthOffset;
     matrix.m[3][3] = 0.0f;
