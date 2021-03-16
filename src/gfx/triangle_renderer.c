@@ -1,6 +1,5 @@
 #include <math.h>
 #include <assert.h>
-#include <stdlib.h>
 #include "triangle_renderer.h"
 #include "../list.h"
 
@@ -83,7 +82,7 @@ void adjust_to_screen_space(const struct KCR_Display* display, struct KCR_Vec4* 
     point->x *= centerWidth;
     point->x += centerWidth;
 
-    point->y *= -centerHeight; // invert for canvas
+    point->y *= centerHeight; // invert for canvas
     point->y += centerHeight;
 }
 

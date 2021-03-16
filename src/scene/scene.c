@@ -45,15 +45,15 @@ bool kcr_scene_init(struct KCR_Scene* scene) {
 
     struct KCR_MeshInstance* instance = kcr_list_new_item((void**) &scene->instanceList);
     kcr_mesh_instance_init(instance, &scene->meshList[meshIndex % kcr_list_length(scene->meshList)]);
-    instance->position.x = 0;
-    instance->position.y = 0;
+    instance->position.x = 3;
+    instance->position.y = 3;
     instance->position.z = 10;
 
-    instance = kcr_list_new_item((void**) &scene->instanceList);
-    kcr_mesh_instance_init(instance, &scene->meshList[meshIndex % kcr_list_length(scene->meshList)]);
-    instance->position.x = 5;
-    instance->position.y = 5;
-    instance->position.z = 10;
+//    instance = kcr_list_new_item((void**) &scene->instanceList);
+//    kcr_mesh_instance_init(instance, &scene->meshList[meshIndex % kcr_list_length(scene->meshList)]);
+//    instance->position.x = 5;
+//    instance->position.y = 5;
+//    instance->position.z = 10;
 
     return true;
 }
@@ -89,19 +89,19 @@ void process_camera_inputs(struct KCR_Scene *scene, const struct KCR_InputState 
     }
 
     if (inputState->page_up_down) {
-        struct KCR_Vec3 move = kcr_vec3_mult(&orientation.up, -MOVE_SPEED);
-        move = kcr_vec3_mult(&move, timeDelta);
-        cameraMovement = kcr_vec3_add(&cameraMovement, &move);
-    }
-
-    if (inputState->page_down_down) {
         struct KCR_Vec3 move = kcr_vec3_mult(&orientation.up, MOVE_SPEED);
         move = kcr_vec3_mult(&move, timeDelta);
         cameraMovement = kcr_vec3_add(&cameraMovement, &move);
     }
 
+    if (inputState->page_down_down) {
+        struct KCR_Vec3 move = kcr_vec3_mult(&orientation.up, -MOVE_SPEED);
+        move = kcr_vec3_mult(&move, timeDelta);
+        cameraMovement = kcr_vec3_add(&cameraMovement, &move);
+    }
+
     if (inputState->mouse_wheel_amount != 0) {
-        float amount = inputState->mouse_wheel_amount > 0 ? -MOVE_SPEED : MOVE_SPEED;
+        float amount = inputState->mouse_wheel_amount > 0 ? MOVE_SPEED : -MOVE_SPEED;
         struct KCR_Vec3 move = kcr_vec3_mult(&orientation.up, amount);
         move = kcr_vec3_mult(&move, timeDelta);
         cameraMovement = kcr_vec3_add(&cameraMovement, &move);
