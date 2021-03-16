@@ -10,7 +10,7 @@ bool kcr_camera_init(struct KCR_Camera* camera) {
     camera->position = (struct KCR_Vec3) {0, 0, 0};
     camera->fieldOfViewRadians = kcr_degrees_to_radians(60);
     camera->zNear = 1.0f;
-    camera->zNear = 100.0f;
+    camera->zFar = 100.0f;
 
     return true;
 }
@@ -31,9 +31,9 @@ struct KCR_Matrix4 kcr_camera_view_matrix(const struct KCR_Camera* camera) {
     float forwardDot = kcr_vec3_dot(&orientation.forward, &camera->position);
 
     struct KCR_Matrix4 viewMatrix = {{
-         {orientation.right.x, orientation.right.y, orientation.right.z, rightDot},
-         {orientation.up.x, orientation.up.y, orientation.up.z, upDot},
-         {orientation.forward.x, orientation.forward.y, orientation.forward.z, forwardDot},
+         {orientation.right.x, orientation.right.y, orientation.right.z, -rightDot},
+         {orientation.up.x, orientation.up.y, orientation.up.z, -upDot},
+         {orientation.forward.x, orientation.forward.y, orientation.forward.z, -forwardDot},
          {0, 0, 0, 1},
     }};
 

@@ -130,7 +130,7 @@ void kcr_renderer_render(struct KCR_Renderer *renderer,
 
     update_render_mode(renderer, inputState);
     for (int i = 0; i < renderer->display->windowHeight * renderer->display->windowWidth; i++) {
-        renderer->zBuffer[i] = 0.0;
+        renderer->zBuffer[i] = 0.0f;
     }
 
     struct KCR_Matrix4 projectionMatrix = kcr_mat4_perspective(

@@ -47,13 +47,13 @@ bool kcr_scene_init(struct KCR_Scene* scene) {
     kcr_mesh_instance_init(instance, &scene->meshList[meshIndex % kcr_list_length(scene->meshList)]);
     instance->position.x = 0;
     instance->position.y = 0;
-    instance->position.z = -10;
+    instance->position.z = 10;
 
     instance = kcr_list_new_item((void**) &scene->instanceList);
     kcr_mesh_instance_init(instance, &scene->meshList[meshIndex % kcr_list_length(scene->meshList)]);
     instance->position.x = 5;
     instance->position.y = 5;
-    instance->position.z = -10;
+    instance->position.z = 10;
 
     return true;
 }

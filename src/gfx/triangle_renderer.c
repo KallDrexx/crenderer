@@ -190,7 +190,7 @@ void perform_render(const struct RenderOperation* renderOperation,
             float interpolatedReciprocalW = reciprocalW[0] * coords.w0 + reciprocalW[1] * coords.w1 + reciprocalW[2] * coords.w2;
 
             int index = kcr_display_get_pixel_index(renderOperation->display, x, y);
-            if (renderOperation->zBuffer[index] <= interpolatedReciprocalW) {
+            if (renderOperation->zBuffer[index] >= interpolatedReciprocalW) {
                 // Already drew a pixel from a triangle that's closer
                 continue;
             }
